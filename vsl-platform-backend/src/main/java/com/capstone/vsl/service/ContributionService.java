@@ -4,7 +4,6 @@ import com.capstone.vsl.dto.ContributionDTO;
 import com.capstone.vsl.dto.ContributionRequest;
 import com.capstone.vsl.entity.Contribution;
 import com.capstone.vsl.entity.ContributionStatus;
-import com.capstone.vsl.entity.User;
 import com.capstone.vsl.repository.ContributionRepository;
 import com.capstone.vsl.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;

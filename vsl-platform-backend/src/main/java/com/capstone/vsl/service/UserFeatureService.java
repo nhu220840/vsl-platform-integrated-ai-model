@@ -1,16 +1,13 @@
 package com.capstone.vsl.service;
 
-import com.capstone.vsl.dto.FavoriteDTO;
 import com.capstone.vsl.dto.ReportDTO;
 import com.capstone.vsl.dto.SearchHistoryDTO;
 import com.capstone.vsl.entity.Report;
 import com.capstone.vsl.entity.ReportStatus;
 import com.capstone.vsl.entity.SearchHistory;
-import com.capstone.vsl.entity.UserFavorite;
 import com.capstone.vsl.repository.DictionaryRepository;
 import com.capstone.vsl.repository.ReportRepository;
 import com.capstone.vsl.repository.SearchHistoryRepository;
-import com.capstone.vsl.repository.UserFavoriteRepository;
 import com.capstone.vsl.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +21,6 @@ import java.util.stream.Collectors;
  * User Feature Service
  * Handles user interaction features:
  * - Search History logging
- * - Favorites management
  * - Report creation
  * 
  * Important: All methods require authenticated users (no guest access)
@@ -35,7 +31,6 @@ import java.util.stream.Collectors;
 public class UserFeatureService {
 
     private final SearchHistoryRepository searchHistoryRepository;
-    private final UserFavoriteRepository userFavoriteRepository;
     private final ReportRepository reportRepository;
     private final UserRepository userRepository;
     private final DictionaryRepository dictionaryRepository;
@@ -110,60 +105,6 @@ public class UserFeatureService {
     }
 
     /**
-     * Toggle favorite status for a dictionary word
-     * If favorite exists, remove it. If not, create it.
-     *
-     * @param wordId Dictionary word ID
-     * @param username Username of the authenticated user
-     * @return true if added, false if removed
-     */
-    @Transactional
-    public boolean toggleFavorite(Long wordId, String username) {
-        var user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
-
-        var dictionary = dictionaryRepository.findById(wordId)
-                .orElseThrow(() -> new IllegalArgumentException("Dictionary word not found: " + wordId));
-
-        var existingFavorite = userFavoriteRepository.findByUserAndDictionary(user, dictionary);
-
-        if (existingFavorite.isPresent()) {
-            // Remove favorite
-            userFavoriteRepository.delete(existingFavorite.get());
-            log.info("Removed favorite: user={}, wordId={}", username, wordId);
-            return false;
-        } else {
-            // Add favorite
-            var favorite = UserFavorite.builder()
-                    .user(user)
-                    .dictionary(dictionary)
-                    .build();
-            userFavoriteRepository.save(favorite);
-            log.info("Added favorite: user={}, wordId={}", username, wordId);
-            return true;
-        }
-    }
-
-    /**
-     * Get user's favorites
-     *
-     * @param username Username of the authenticated user
-     * @return List of favorite dictionary entries
-     */
-    @Transactional(readOnly = true)
-    public List<FavoriteDTO> getUserFavorites(String username) {
-        var user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
-
-        var favorites = userFavoriteRepository.findByUserOrderByCreatedAtDesc(user);
-        log.debug("Retrieved {} favorites for user: {}", favorites.size(), username);
-
-        return favorites.stream()
-                .map(this::favoriteToDTO)
-                .collect(Collectors.toList());
-    }
-
-    /**
      * Create a report for a dictionary word
      *
      * @param wordId Dictionary word ID
@@ -202,21 +143,6 @@ public class UserFeatureService {
                 .word(history.getDictionary().getWord())
                 .searchQuery(history.getSearchQuery())
                 .searchedAt(history.getSearchedAt())
-                .build();
-    }
-
-    /**
-     * Convert UserFavorite entity to DTO
-     */
-    private FavoriteDTO favoriteToDTO(UserFavorite favorite) {
-        var dictionary = favorite.getDictionary();
-        return FavoriteDTO.builder()
-                .id(favorite.getId())
-                .dictionaryId(dictionary.getId())
-                .word(dictionary.getWord())
-                .definition(dictionary.getDefinition())
-                .videoUrl(dictionary.getVideoUrl())
-                .createdAt(favorite.getCreatedAt())
                 .build();
     }
 

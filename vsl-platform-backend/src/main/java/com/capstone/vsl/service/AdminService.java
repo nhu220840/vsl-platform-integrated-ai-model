@@ -14,6 +14,11 @@ import com.capstone.vsl.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +28,7 @@ import java.util.stream.Collectors;
 /**
  * Admin Service
  * Handles administrative operations:
+ * - User management (listing, role updates, password resets)
  * - Approving contributions (moving to dictionary)
  * - Getting dashboard statistics
  */
@@ -36,6 +42,7 @@ public class AdminService {
     private final UserRepository userRepository;
     private final DictionaryService dictionaryService;
     private final ObjectMapper objectMapper;
+    private final PasswordEncoder passwordEncoder;
 
     /**
      * Approve a contribution
@@ -134,12 +141,18 @@ public class AdminService {
      * @return List of all users
      */
     @Transactional(readOnly = true)
-    public List<UserDTO> getAllUsers() {
-        var users = userRepository.findAll();
-        log.debug("Retrieved {} users for admin dashboard", users.size());
-        return users.stream()
-                .map(this::userToDTO)
-                .collect(Collectors.toList());
+    public Page<UserDTO> getUsers(int page, int size) {
+        Pageable pageable = PageRequest.of(
+                Math.max(page, 0),
+                Math.min(Math.max(size, 1), 50),
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+
+        var result = userRepository.findAll(pageable)
+                .map(this::userToDTO);
+
+        log.debug("Retrieved {} users (page={}, size={})", result.getNumberOfElements(), page, size);
+        return result;
     }
 
     /**
@@ -170,6 +183,22 @@ public class AdminService {
 
         log.info("Updated user role: userId={}, oldRole={}, newRole={}", userId, oldRole, newRole);
         return userToDTO(user);
+    }
+
+    /**
+     * Force reset a user's password (admin action).
+     *
+     * @param userId     target user id
+     * @param newPassword raw new password
+     */
+    @Transactional
+    public void resetUserPassword(Long userId, String newPassword) {
+        var user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        log.info("Admin reset password for userId={}", userId);
     }
 
     /**

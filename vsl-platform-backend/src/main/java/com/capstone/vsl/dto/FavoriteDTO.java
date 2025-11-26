@@ -20,6 +20,6 @@ public class FavoriteDTO {
     private String word;
     private String definition;
     private String videoUrl;
-    private LocalDateTime createdAt;
+    private LocalDateTime savedAt;
 }
 

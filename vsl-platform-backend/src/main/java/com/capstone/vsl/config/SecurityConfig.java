@@ -1,6 +1,7 @@
 package com.capstone.vsl.config;
 
 import com.capstone.vsl.security.JwtAuthenticationFilter;
+import com.capstone.vsl.security.RateLimitingFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -37,6 +38,7 @@ public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final RateLimitingFilter rateLimitingFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -137,19 +139,24 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints (no authentication required)
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/dictionary/search/**").permitAll()
                 .requestMatchers("/api/vsl/**").permitAll()  // Gesture recognition and spelling (public)
+                .requestMatchers("/api/dictionary/search/**").permitAll()
+                .requestMatchers("/api/dictionary/detail/**").permitAll()
                 
                 // Swagger UI endpoints (public for development)
                 .requestMatchers("/v3/api-docs/**").permitAll()
                 .requestMatchers("/swagger-ui/**").permitAll()
                 .requestMatchers("/swagger-ui.html").permitAll()
                 
-                // Admin endpoints (require ROLE_ADMIN)
+                // User endpoints (require authenticated user/admin)
+                .requestMatchers("/api/user/favorites/**").hasAnyRole("USER", "ADMIN")
+                .requestMatchers("/api/user/contributions/**").hasAnyRole("USER", "ADMIN")
+                .requestMatchers("/api/user/reports/**").hasAnyRole("USER", "ADMIN")
+                .requestMatchers("/api/user/profile/**").hasAnyRole("USER", "ADMIN")
+                .requestMatchers("/api/user/history/**").hasAnyRole("USER", "ADMIN")
+
+                // Admin endpoints (strictly ROLE_ADMIN)
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                
-                // User endpoints (require authentication)
-                .requestMatchers("/api/user/**").authenticated()
                 
                 // All other requests require authentication
                 .anyRequest().authenticated()
@@ -158,7 +165,8 @@ public class SecurityConfig {
             // Set authentication provider
             .authenticationProvider(authenticationProvider())
             
-            // Add JWT filter before UsernamePasswordAuthenticationFilter
+            // Add filters before the standard UsernamePasswordAuthenticationFilter
+            .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

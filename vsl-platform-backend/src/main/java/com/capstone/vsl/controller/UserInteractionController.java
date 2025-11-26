@@ -3,7 +3,6 @@ package com.capstone.vsl.controller;
 import com.capstone.vsl.dto.ApiResponse;
 import com.capstone.vsl.dto.ContributionDTO;
 import com.capstone.vsl.dto.ContributionRequest;
-import com.capstone.vsl.dto.FavoriteDTO;
 import com.capstone.vsl.dto.ReportDTO;
 import com.capstone.vsl.dto.ReportRequest;
 import com.capstone.vsl.dto.SearchHistoryDTO;
@@ -20,11 +19,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * User Interaction Controller
- * Handles user interaction features: History, Favorites, Reports
+ * Handles user interaction features: History, Reports, Contributions
  * 
  * Security: All endpoints require authentication (no guest access)
  * - Class-level @PreAuthorize("isAuthenticated()") ensures GUESTS cannot access
@@ -70,80 +68,6 @@ public class UserInteractionController {
             log.error("Failed to get search history: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("Failed to retrieve search history: " + e.getMessage()));
-        }
-    }
-
-    /**
-     * POST /api/user/favorites/{wordId}
-     * Toggle favorite status for a dictionary word
-     * If favorite exists, remove it. If not, create it.
-     * Requires authentication (USER or ADMIN role)
-     *
-     * @param wordId Dictionary word ID
-     * @param authentication Current authentication (to get username)
-     * @return Response indicating if favorite was added or removed
-     */
-    @PostMapping("/favorites/{wordId}")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> toggleFavorite(
-            @PathVariable Long wordId,
-            Authentication authentication) {
-        try {
-            var userPrincipal = (UserPrincipal) authentication.getPrincipal();
-            var username = userPrincipal.getUsername();
-
-            log.info("Toggling favorite for user: {}, wordId: {}", username, wordId);
-            var isAdded = userFeatureService.toggleFavorite(wordId, username);
-
-            var message = isAdded ? "Favorite added successfully" : "Favorite removed successfully";
-            var data = Map.<String, Object>of(
-                    "wordId", wordId,
-                    "isFavorite", isAdded,
-                    "message", message
-            );
-
-            return ResponseEntity.ok(ApiResponse.success(message, data));
-        } catch (IllegalArgumentException e) {
-            log.warn("Invalid request to toggle favorite: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error(e.getMessage()));
-        } catch (Exception e) {
-            log.error("Failed to toggle favorite: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Failed to toggle favorite: " + e.getMessage()));
-        }
-    }
-
-    /**
-     * GET /api/user/favorites
-     * Get user's favorites
-     * Requires authentication (USER or ADMIN role)
-     *
-     * @param authentication Current authentication (to get username)
-     * @return List of favorite dictionary entries
-     */
-    @GetMapping("/favorites")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<List<FavoriteDTO>>> getFavorites(Authentication authentication) {
-        try {
-            var userPrincipal = (UserPrincipal) authentication.getPrincipal();
-            var username = userPrincipal.getUsername();
-
-            log.info("Retrieving favorites for user: {}", username);
-            var favorites = userFeatureService.getUserFavorites(username);
-
-            return ResponseEntity.ok(ApiResponse.success(
-                    String.format("Retrieved %d favorites", favorites.size()),
-                    favorites
-            ));
-        } catch (IllegalArgumentException e) {
-            log.warn("Invalid request to get favorites: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error(e.getMessage()));
-        } catch (Exception e) {
-            log.error("Failed to get favorites: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Failed to retrieve favorites: " + e.getMessage()));
         }
     }
 

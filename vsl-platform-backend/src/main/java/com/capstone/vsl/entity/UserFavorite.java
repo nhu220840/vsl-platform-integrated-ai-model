@@ -30,12 +30,12 @@ public class UserFavorite {
     @JoinColumn(name = "dictionary_id", nullable = false)
     private Dictionary dictionary;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "saved_at", nullable = false, updatable = false)
+    private LocalDateTime savedAt;
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
+        savedAt = LocalDateTime.now();
     }
 }
 

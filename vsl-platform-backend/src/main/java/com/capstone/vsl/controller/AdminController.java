@@ -1,5 +1,6 @@
 package com.capstone.vsl.controller;
 
+import com.capstone.vsl.dto.AdminPasswordResetRequest;
 import com.capstone.vsl.dto.ApiResponse;
 import com.capstone.vsl.dto.ContributionDTO;
 import com.capstone.vsl.dto.DashboardStatsDTO;
@@ -12,11 +13,19 @@ import com.capstone.vsl.service.AdminService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -38,19 +47,20 @@ public class AdminController {
 
     /**
      * GET /api/admin/users
-     * List all users with their details (id, username, email, role)
+     * List users with pagination.
      *
-     * @return List of all users
+     * @param page page index (0-based)
+     * @param size page size (max 50)
+     * @return paginated users
      */
     @GetMapping("/users")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<List<UserDTO>>> getAllUsers() {
+    public ResponseEntity<ApiResponse<Page<UserDTO>>> getUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
         try {
-            var users = adminService.getAllUsers();
-            return ResponseEntity.ok(ApiResponse.success(
-                    String.format("Retrieved %d users", users.size()),
-                    users
-            ));
+            var users = adminService.getUsers(page, size);
+            return ResponseEntity.ok(ApiResponse.success("Users retrieved", users));
         } catch (Exception e) {
             log.error("Failed to get users: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -94,6 +104,33 @@ public class AdminController {
             log.error("Failed to update user role {}: {}", userId, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("Failed to update user role: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * PUT /api/admin/users/{userId}/reset-password
+     * Force resets the user's password without old password requirement.
+     *
+     * @param userId  target user id
+     * @param request new password payload
+     * @return success acknowledgment
+     */
+    @PutMapping("/users/{userId}/reset-password")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<String>> resetUserPassword(
+            @PathVariable Long userId,
+            @Valid @RequestBody AdminPasswordResetRequest request) {
+        try {
+            adminService.resetUserPassword(userId, request.getNewPassword());
+            return ResponseEntity.ok(ApiResponse.success("Password reset successfully", "ok"));
+        } catch (IllegalArgumentException e) {
+            log.warn("Failed to reset password for user {}: {}", userId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Unexpected error resetting password for user {}: {}", userId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to reset password: " + e.getMessage()));
         }
     }
 

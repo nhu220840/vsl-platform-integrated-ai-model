@@ -4,9 +4,10 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,8 +16,9 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Dictionary {
+@SuperBuilder
+@EqualsAndHashCode(callSuper = true)
+public class Dictionary extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,12 +37,6 @@ public class Dictionary {
     @Builder.Default
     private Boolean elasticSynced = false;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
     @OneToMany(mappedBy = "dictionary", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<SearchHistory> searchHistories = new ArrayList<>();
@@ -48,16 +44,5 @@ public class Dictionary {
     @OneToMany(mappedBy = "dictionary", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<UserFavorite> favorites = new ArrayList<>();
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }
 
