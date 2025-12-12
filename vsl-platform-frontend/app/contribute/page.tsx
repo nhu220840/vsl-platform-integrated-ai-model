@@ -2,38 +2,87 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import apiClient from "@/lib/api-client";
+import { useAuthStore } from "@/stores/auth-store";
+import type { ContributionRequest, ApiResponse } from "@/types/api";
 import styles from "../../styles/contribute.module.css";
 
 export default function ContributePage() {
   const router = useRouter();
+  const { isAuthenticated } = useAuthStore();
+
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const [formData, setFormData] = useState({
     word: "",
     definition: "",
     videoUrl: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
 
-    // Log the form data (in a real app, this would be sent to a server)
-    console.log("Word Contributed:", {
-      word: formData.word,
-      definition: formData.definition,
-      videoUrl: formData.videoUrl,
-      timestamp: new Date().toISOString(),
-    });
+    // Check authentication
+    if (!isAuthenticated) {
+      alert("⚠️ Vui lòng đăng nhập để gửi đóng góp");
+      router.push("/login");
+      return;
+    }
 
-    // Show success message
-    setShowSuccess(true);
+    // Validate form data
+    if (
+      !formData.word.trim() ||
+      !formData.definition.trim() ||
+      !formData.videoUrl.trim()
+    ) {
+      setError("Vui lòng điền đầy đủ thông tin");
+      return;
+    }
 
-    // Clear form
-    setFormData({ word: "", definition: "", videoUrl: "" });
+    setIsSubmitting(true);
 
-    // Redirect after 2 seconds
-    setTimeout(() => {
-      router.push("/dictionary");
-    }, 2000);
+    try {
+      console.log("[Contribute] Submitting contribution:", formData);
+
+      const requestBody: ContributionRequest = {
+        word: formData.word.trim(),
+        definition: formData.definition.trim(),
+        videoUrl: formData.videoUrl.trim(),
+      };
+
+      const response = await apiClient.post<ApiResponse<any>>(
+        "/user/contributions",
+        requestBody
+      );
+
+      if (response.data.code === 200 || response.data.code === 201) {
+        console.log("[Contribute] Contribution submitted successfully");
+
+        // Show success message
+        setShowSuccess(true);
+
+        // Clear form
+        setFormData({ word: "", definition: "", videoUrl: "" });
+
+        // Redirect after 3 seconds
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 3000);
+      } else {
+        throw new Error(
+          response.data.message || "Failed to submit contribution"
+        );
+      }
+    } catch (err: any) {
+      const errorMsg =
+        err.response?.data?.message || err.message || "Gửi đóng góp thất bại";
+      console.error("[Contribute] Submission error:", errorMsg);
+      setError(errorMsg);
+      setIsSubmitting(false);
+    }
   };
 
   const handleCancel = () => {
@@ -57,6 +106,8 @@ export default function ContributePage() {
           <div className={styles["form-title"]}>CONTRIBUTE_NEW_WORD</div>
 
           <form id="contributeForm" onSubmit={handleSubmit}>
+            {error && <div className={styles["error-message"]}>⚠️ {error}</div>}
+
             {/* Word Field */}
             <div className={styles["form-group"]}>
               <label className={styles["form-label"]} htmlFor="wordInput">
@@ -72,6 +123,7 @@ export default function ContributePage() {
                   setFormData({ ...formData, word: e.target.value })
                 }
                 required
+                disabled={isSubmitting}
               />
             </div>
 
@@ -89,6 +141,7 @@ export default function ContributePage() {
                   setFormData({ ...formData, definition: e.target.value })
                 }
                 required
+                disabled={isSubmitting}
               ></textarea>
             </div>
 
@@ -106,18 +159,25 @@ export default function ContributePage() {
                 onChange={(e) =>
                   setFormData({ ...formData, videoUrl: e.target.value })
                 }
+                required
+                disabled={isSubmitting}
               />
             </div>
 
             {/* Button Group */}
             <div className={styles["button-group"]}>
-              <button type="submit" className={styles.btn}>
-                SUBMIT_DATA
+              <button
+                type="submit"
+                className={styles.btn}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "SUBMITTING..." : "SUBMIT_DATA"}
               </button>
               <button
                 type="button"
                 className={`${styles.btn} ${styles["btn-secondary"]}`}
                 onClick={handleCancel}
+                disabled={isSubmitting}
               >
                 CANCEL
               </button>
@@ -130,23 +190,37 @@ export default function ContributePage() {
       {showSuccess && (
         <div className={`${styles["success-message"]} ${styles.active}`}>
           <div style={{ fontSize: "18px", marginBottom: "12px" }}>
-            WORD_SUBMITTED_SUCCESSFULLY
+            ✓ ĐÃ GỬI ĐÓNG GÓP THÀNH CÔNG
+          </div>
+          <div
+            style={{
+              fontSize: "14px",
+              marginBottom: "12px",
+              letterSpacing: "1px",
+            }}
+          >
+            Đóng góp của bạn đã được gửi thành công!
           </div>
           <div
             style={{
               fontSize: "12px",
               marginBottom: "24px",
               letterSpacing: "1px",
+              color: "#ffaa00",
             }}
           >
-            Your contribution has been uploaded to the database.
+            📋 Trạng thái: <strong>PENDING</strong> (Chờ duyệt)
+            <br />
+            <span style={{ fontSize: "11px", opacity: 0.8 }}>
+              Quản trị viên sẽ xem xét và phê duyệt đóng góp của bạn.
+            </span>
           </div>
           <button
             className={styles.btn}
-            onClick={handleCancel}
+            onClick={() => router.push("/dashboard")}
             style={{ width: "100%" }}
           >
-            RETURN_TO_DICTIONARY
+            RETURN_TO_DASHBOARD
           </button>
         </div>
       )}

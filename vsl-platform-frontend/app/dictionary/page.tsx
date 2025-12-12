@@ -1,37 +1,113 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
+import apiClient from "@/lib/api-client";
+import { ApiResponse, DictionaryDTO } from "@/types/api";
 import styles from "../../styles/dictionary.module.css";
 
 export default function DictionaryPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [results, setResults] = useState<DictionaryDTO[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const sampleWords = [
-    {
-      id: 1,
-      word: "Xin chào",
-      category: "Giao tiếp",
-      difficulty: "Dễ",
-    },
-    {
-      id: 2,
-      word: "Cảm ơn",
-      category: "Lịch sự",
-      difficulty: "Dễ",
-    },
-    {
-      id: 3,
-      word: "Tạm biệt",
-      category: "Giao tiếp",
-      difficulty: "Dễ",
-    },
-  ];
+  /**
+   * searchDictionary - Gọi API tìm kiếm từ điển
+   *
+   * Flow:
+   * 1. Validate query không rỗng
+   * 2. Gọi GET /dictionary/search?query={query}
+   * 3. Parse response.data.data (DictionaryDTO[])
+   * 4. Update results state để hiển thị
+   *
+   * API Contract:
+   * - Endpoint: GET /api/dictionary/search
+   * - Query Params: query (string)
+   * - Response: ApiResponse<DictionaryDTO[]>
+   * - Rate Limit: Không giới hạn (public endpoint)
+   * - Search: Elasticsearch first, fallback to PostgreSQL
+   */
+  const searchDictionary = useCallback(async (query: string) => {
+    const trimmedQuery = query.trim();
+
+    if (!trimmedQuery) {
+      console.log("[Dictionary] Query is empty, clearing results");
+      setResults([]);
+      setError("");
+      return;
+    }
+
+    console.log(`[Dictionary] Searching for: "${trimmedQuery}"`);
+
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const response = await apiClient.get<ApiResponse<DictionaryDTO[]>>(
+        "/dictionary/search",
+        { params: { query: trimmedQuery } }
+      );
+
+      console.log(`[Dictionary] API Response:`, response.data);
+
+      if (response.data.code === 200 && response.data.data) {
+        const foundResults = response.data.data;
+        console.log(
+          `[Dictionary] Success: Found ${foundResults.length} results`
+        );
+        setResults(foundResults);
+      } else {
+        const errorMsg = response.data.message || "Không tìm thấy kết quả";
+        console.warn(`[Dictionary] No results or error:`, errorMsg);
+        setError(errorMsg);
+        setResults([]);
+      }
+    } catch (err: any) {
+      console.error("[Dictionary] Search error:", err);
+      setError(
+        err.response?.data?.message || "Lỗi khi tìm kiếm. Vui lòng thử lại."
+      );
+      setResults([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  /**
+   * Debounced search effect (300ms delay)
+   *
+   * Purpose: Prevent API calls on every keystroke
+   * - Wait 300ms after user stops typing
+   * - Cancel previous timeout if user continues typing
+   * - Only trigger search when typing pauses
+   */
+  useEffect(() => {
+    // Clear previous timeout
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+
+    // Set new timeout
+    debounceTimeoutRef.current = setTimeout(() => {
+      console.log(`[Dictionary] Debounce completed, triggering search`);
+      searchDictionary(searchQuery);
+    }, 300);
+
+    // Cleanup on unmount or query change
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, [searchQuery, searchDictionary]);
 
   return (
     <div className={styles["dictionary-container"]}>
-      <a href="/" className={styles["back-link"]}>
+      <Link href="/dashboard" className={styles["back-link"]}>
         ← QUAY LẠI
-      </a>
+      </Link>
 
       {/* Hero Section */}
       <div className={styles["hero-section"]}>
@@ -54,25 +130,66 @@ export default function DictionaryPage() {
       {/* Content Section */}
       <div className={styles["content-section"]}>
         <div className={styles["section-header"]}>
-          <h2 className={styles["section-title"]}>TẤT CẢ TỪ VỰNG</h2>
+          <h2 className={styles["section-title"]}>
+            {searchQuery ? "KẾT QUẢ TÌM KIẾM" : "TẤT CẢ TỪ VỰNG"}
+          </h2>
           <div className={styles["result-count"]}>
-            Tìm thấy {sampleWords.length} kết quả
+            {isLoading
+              ? "Đang tìm kiếm..."
+              : `Tìm thấy ${results.length} kết quả`}
           </div>
         </div>
 
+        {error && (
+          <div
+            style={{ color: "#ff4444", textAlign: "center", padding: "20px" }}
+          >
+            {error}
+          </div>
+        )}
+
+        {!isLoading && !error && results.length === 0 && searchQuery && (
+          <div style={{ textAlign: "center", padding: "40px", opacity: 0.7 }}>
+            Không tìm thấy từ vựng phù hợp với &quot;{searchQuery}&quot;
+          </div>
+        )}
+
+        {!searchQuery && results.length === 0 && !isLoading && (
+          <div style={{ textAlign: "center", padding: "40px", opacity: 0.7 }}>
+            Nhập từ khóa để tìm kiếm từ vựng
+          </div>
+        )}
+
         <div className={styles["word-grid"]}>
-          {sampleWords.map((word) => (
+          {results.map((word) => (
             <div key={word.id} className={styles["word-card"]}>
-              <div className={styles["word-video-placeholder"]}>🎥</div>
-              <h3 className={styles["word-title"]}>{word.word}</h3>
-              <div className={styles["word-meta"]}>
-                <span className={styles["meta-badge"]}>{word.category}</span>
-                <span className={styles["meta-badge"]}>{word.difficulty}</span>
+              <div className={styles["word-video-placeholder"]}>
+                {word.videoUrl ? (
+                  <video
+                    src={word.videoUrl}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
+                    controls
+                  />
+                ) : (
+                  "🎥"
+                )}
               </div>
-              <p className={styles["word-description"]}>
-                Video minh họa cách thực hiện cử chỉ cho từ &quot;{word.word}&quot;
-              </p>
-              <button className={styles["view-detail"]}>Xem chi tiết →</button>
+              <h3 className={styles["word-title"]}>{word.word}</h3>
+              {word.definition && (
+                <p className={styles["word-description"]}>
+                  {word.definition.slice(0, 100)}
+                  {word.definition.length > 100 ? "..." : ""}
+                </p>
+              )}
+              <Link href={`/dictionary/${word.id}`}>
+                <button className={styles["view-detail"]}>
+                  Xem chi tiết →
+                </button>
+              </Link>
             </div>
           ))}
         </div>

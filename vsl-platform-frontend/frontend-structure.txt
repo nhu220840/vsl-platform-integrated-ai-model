@@ -1,17 +1,38 @@
-vsl-platform/vsl-platform-frontend » tree
 .
 ├── app
 │   ├── admin
+│   │   ├── contributions
+│   │   │   └── page.tsx
+│   │   ├── dictionary
+│   │   │   └── page.tsx
 │   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   └── users
+│   │       └── page.tsx
+│   ├── contribute
 │   │   └── page.tsx
-│   ├── assets
-│   │   ├── css
-│   │   └── js
+│   ├── dashboard
+│   │   └── page.tsx
+│   ├── dictionary
+│   │   ├── page.tsx
+│   │   └── [wordId]
+│   │       └── page.tsx
+│   ├── error
+│   │   └── page.tsx
 │   ├── favicon.ico
 │   ├── globals.css
 │   ├── layout.tsx
+│   ├── login
+│   │   └── page.tsx
 │   ├── page.tsx
-│   └── redux
+│   ├── recognize
+│   │   └── page.tsx
+│   ├── register
+│   │   └── page.tsx
+│   ├── spell
+│   │   └── page.tsx
+│   └── users
+│       └── page.tsx
 ├── components
 │   └── features
 │       └── ai
@@ -23257,6 +23278,11 @@ vsl-platform/vsl-platform-frontend » tree
 │   │   │   └── index.js
 │   │   └── tsconfig.json
 │   ├── @types
+│   │   ├── axios
+│   │   │   ├── index.d.ts
+│   │   │   ├── package.json
+│   │   │   ├── README.md
+│   │   │   └── types-metadata.json
 │   │   ├── estree
 │   │   │   ├── flow.d.ts
 │   │   │   ├── index.d.ts
@@ -25814,8 +25840,23 @@ vsl-platform/vsl-platform-frontend » tree
 ├── README.md
 ├── stores
 │   └── auth-store.ts
+├── styles
+│   ├── admin-contributions.module.css
+│   ├── admin-dictionary.module.css
+│   ├── admin.module.css
+│   ├── admin-users.module.css
+│   ├── contribute.module.css
+│   ├── dashboard.module.css
+│   ├── dictionary.module.css
+│   ├── error.module.css
+│   ├── login.module.css
+│   ├── profile.module.css
+│   ├── recognize.module.css
+│   ├── register.module.css
+│   ├── spell.module.css
+│   └── word-detail.module.css
 ├── tsconfig.json
 └── types
     └── api.ts
 
-2034 directories, 23784 files
+2045 directories, 23815 files

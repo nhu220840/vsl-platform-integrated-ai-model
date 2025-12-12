@@ -1,16 +1,104 @@
 "use client";
 
 import { useState } from "react";
+import apiClient from "@/lib/api-client";
+import type { PasswordChangeRequest, ApiResponse } from "@/types/api";
 import styles from "../../styles/profile.module.css";
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [showEditModal, setShowEditModal] = useState(false);
 
-  const handlePasswordChange = (e: React.FormEvent) => {
+  // Password change state
+  const [passwordForm, setPasswordForm] = useState({
+    oldPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [isPasswordChanging, setIsPasswordChanging] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert("Password change successful! (This is a demo)");
-    (e.target as HTMLFormElement).reset();
+    setPasswordError(null);
+    setPasswordSuccess(null);
+
+    // Client-side validation
+    if (
+      !passwordForm.oldPassword ||
+      !passwordForm.newPassword ||
+      !passwordForm.confirmPassword
+    ) {
+      setPasswordError("Vui lòng điền đầy đủ thông tin");
+      return;
+    }
+
+    // Check if new password matches confirm password
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError("Mật khẩu mới và xác nhận mật khẩu không khớp");
+      return;
+    }
+
+    // Check if new password is different from old password
+    if (passwordForm.oldPassword === passwordForm.newPassword) {
+      setPasswordError("Mật khẩu mới phải khác mật khẩu cũ");
+      return;
+    }
+
+    // Check password strength (optional but recommended)
+    if (passwordForm.newPassword.length < 6) {
+      setPasswordError("Mật khẩu mới phải có ít nhất 6 ký tự");
+      return;
+    }
+
+    setIsPasswordChanging(true);
+
+    try {
+      console.log("[Profile] Changing password...");
+
+      const requestBody: PasswordChangeRequest = {
+        oldPassword: passwordForm.oldPassword,
+        newPassword: passwordForm.newPassword,
+      };
+
+      const response = await apiClient.put<ApiResponse<null>>(
+        "/user/profile/password",
+        requestBody
+      );
+
+      if (response.data.code === 200) {
+        console.log("[Profile] Password changed successfully");
+        setPasswordSuccess("✓ Đổi mật khẩu thành công!");
+
+        // Clear form
+        setPasswordForm({
+          oldPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        });
+
+        // Clear success message after 3 seconds
+        setTimeout(() => {
+          setPasswordSuccess(null);
+        }, 3000);
+      } else {
+        throw new Error(response.data.message || "Failed to change password");
+      }
+    } catch (err) {
+      const error = err as {
+        response?: { data?: { message?: string } };
+        message?: string;
+      };
+      const errorMsg =
+        error.response?.data?.message ||
+        error.message ||
+        "Đổi mật khẩu thất bại";
+      console.error("[Profile] Password change error:", errorMsg);
+      setPasswordError(errorMsg);
+    } finally {
+      setIsPasswordChanging(false);
+    }
   };
 
   const handleEditProfile = (e: React.FormEvent) => {
@@ -357,13 +445,32 @@ export default function ProfilePage() {
               className={styles["settings-form"]}
               onSubmit={handlePasswordChange}
             >
+              {passwordError && (
+                <div className={styles["error-message"]}>
+                  ⚠️ {passwordError}
+                </div>
+              )}
+              {passwordSuccess && (
+                <div className={styles["success-message"]}>
+                  {passwordSuccess}
+                </div>
+              )}
+
               <div className={styles["form-group"]}>
                 <label className={styles["form-label"]}>OLD_PASSWORD</label>
                 <input
                   type="password"
                   className={styles["form-input"]}
                   placeholder="Enter current password"
+                  value={passwordForm.oldPassword}
+                  onChange={(e) =>
+                    setPasswordForm({
+                      ...passwordForm,
+                      oldPassword: e.target.value,
+                    })
+                  }
                   required
+                  disabled={isPasswordChanging}
                 />
               </div>
               <div className={styles["form-group"]}>
@@ -371,8 +478,16 @@ export default function ProfilePage() {
                 <input
                   type="password"
                   className={styles["form-input"]}
-                  placeholder="Enter new password"
+                  placeholder="Enter new password (min 6 characters)"
+                  value={passwordForm.newPassword}
+                  onChange={(e) =>
+                    setPasswordForm({
+                      ...passwordForm,
+                      newPassword: e.target.value,
+                    })
+                  }
                   required
+                  disabled={isPasswordChanging}
                 />
               </div>
               <div className={styles["form-group"]}>
@@ -381,11 +496,23 @@ export default function ProfilePage() {
                   type="password"
                   className={styles["form-input"]}
                   placeholder="Confirm new password"
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) =>
+                    setPasswordForm({
+                      ...passwordForm,
+                      confirmPassword: e.target.value,
+                    })
+                  }
                   required
+                  disabled={isPasswordChanging}
                 />
               </div>
-              <button type="submit" className={styles["form-button"]}>
-                CHANGE_PASSWORD
+              <button
+                type="submit"
+                className={styles["form-button"]}
+                disabled={isPasswordChanging}
+              >
+                {isPasswordChanging ? "CHANGING..." : "CHANGE_PASSWORD"}
               </button>
             </form>
           </div>

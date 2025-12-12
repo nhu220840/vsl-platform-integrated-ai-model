@@ -1,16 +1,20 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  Users, 
-  FileText, 
-  BookOpen, 
+import { useEffect } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  LayoutDashboard,
+  Users,
+  FileText,
+  BookOpen,
   LogOut,
   Terminal,
-  Circle
-} from 'lucide-react';
+  Circle,
+  Shield,
+} from "lucide-react";
+import { useAuthStatus } from "@/hooks/useAuthStatus";
+import { useAuthStore } from "@/stores/auth-store";
 
 export default function AdminLayout({
   children,
@@ -19,25 +23,53 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { isLoggedIn, userRole, username } = useAuthStatus();
+  const logout = useAuthStore((state) => state.logout);
+
+  useEffect(() => {
+    // Redirect to login if not authenticated
+    if (!isLoggedIn) {
+      router.replace("/login");
+      return;
+    }
+
+    // Redirect to home if not admin
+    if (userRole !== "ADMIN") {
+      router.replace("/");
+      return;
+    }
+  }, [isLoggedIn, userRole, router]);
 
   const menuItems = [
-    { href: '/admin', label: '[DASHBOARD]', icon: LayoutDashboard },
-    { href: '/admin/users', label: '[USER_MANAGER]', icon: Users },
-    { href: '/admin/contributions', label: '[CONTRIBUTIONS]', icon: FileText },
-    { href: '/admin/dictionary', label: '[DICTIONARY_DB]', icon: BookOpen },
+    { href: "/admin", label: "[DASHBOARD]", icon: LayoutDashboard },
+    { href: "/admin/users", label: "[USER_MANAGER]", icon: Users },
+    { href: "/admin/contributions", label: "[CONTRIBUTIONS]", icon: FileText },
+    { href: "/admin/dictionary", label: "[DICTIONARY_DB]", icon: BookOpen },
   ];
 
   const isActive = (href: string) => {
-    if (href === '/admin') {
-      return pathname === '/admin';
+    if (href === "/admin") {
+      return pathname === "/admin";
     }
     return pathname?.startsWith(href);
   };
 
   const handleLogout = () => {
-    // TODO: Implement logout logic
-    router.push('/login');
+    logout();
+    router.push("/login");
   };
+
+  // Show loading screen while checking authentication
+  if (!isLoggedIn || userRole !== "ADMIN") {
+    return (
+      <div className="min-h-screen bg-[var(--bg-color)] text-[var(--primary-color)] flex items-center justify-center">
+        <div className="text-center">
+          <Shield className="w-16 h-16 mx-auto mb-4 animate-pulse" />
+          <p className="text-sm tracking-wider">VERIFYING ADMIN ACCESS...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[var(--bg-color)] text-[var(--primary-color)] overflow-hidden">
@@ -45,7 +77,8 @@ export default function AdminLayout({
       <div className="fixed top-0 left-0 right-0 h-10 bg-[#0a0a0a] border-b border-[var(--primary-color)] flex items-center px-5 text-xs z-[1000] border-glow">
         <span className="text-[11px] tracking-wider flex items-center gap-2">
           <Terminal className="w-3 h-3" />
-          SYSTEM: ADMIN_ACCESS_GRANTED | USER: ADMIN_01
+          SYSTEM: ADMIN_ACCESS_GRANTED | USER:{" "}
+          {username?.toUpperCase() || "ADMIN"}
         </span>
         <div className="ml-auto flex items-center gap-4">
           <Circle className="w-2 h-2 fill-[var(--primary-color)] text-[var(--primary-color)] animate-pulse" />
@@ -73,9 +106,10 @@ export default function AdminLayout({
                   href={item.href}
                   className={`
                     block px-4 py-3 mb-2 border transition-all duration-300 text-xs tracking-wide relative
-                    ${active
-                      ? 'border-[var(--primary-color)] bg-[rgba(0,255,65,0.15)] text-glow border-glow'
-                      : 'border-transparent hover:border-[var(--primary-color)] hover:bg-[rgba(0,255,65,0.1)] hover:border-glow'
+                    ${
+                      active
+                        ? "border-[var(--primary-color)] bg-[rgba(0,255,65,0.15)] text-glow border-glow"
+                        : "border-transparent hover:border-[var(--primary-color)] hover:bg-[rgba(0,255,65,0.1)] hover:border-glow"
                     }
                   `}
                 >
@@ -108,4 +142,3 @@ export default function AdminLayout({
     </div>
   );
 }
-
