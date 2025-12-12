@@ -1,0 +1,322 @@
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #050505;
+            color: #ffffff;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Static noise overlay background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='9' numOctaves='4' result='noise'/%3E%3C/filter%3E%3Crect width='400' height='400' fill='%23050505' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+            background-size: 100px 100px;
+            pointer-events: none;
+            z-index: 1;
+            animation: staticNoise 0.15s infinite;
+        }
+
+        @keyframes staticNoise {
+            0% {
+                opacity: 0.02;
+                background-position: 0 0;
+            }
+            50% {
+                opacity: 0.05;
+                background-position: -10px -10px;
+            }
+            100% {
+                opacity: 0.02;
+                background-position: 0 0;
+            }
+        }
+
+        /* Scanning line effect */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                180deg,
+                transparent 0%,
+                rgba(255, 0, 60, 0.03) 2%,
+                transparent 4%,
+                transparent 100%
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 2;
+            animation: scanlines 8s linear infinite;
+        }
+
+        @keyframes scanlines {
+            0% {
+                transform: translateY(0);
+            }
+            100% {
+                transform: translateY(10px);
+            }
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            padding: 20px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        /* Glitch effect on error code */
+        .error-code {
+            font-size: 12rem;
+            font-weight: bold;
+            line-height: 1;
+            margin-bottom: 20px;
+            position: relative;
+            letter-spacing: 0.1em;
+            text-shadow: 
+                0.05em 0 0 #ff003c,
+                -0.025em -0.03em 0 #00ff41,
+                0.025em 0.03em 0 #ff003c;
+            animation: glitch 0.3s infinite;
+            color: #ffffff;
+        }
+
+        @keyframes glitch {
+            0% {
+                text-shadow: 
+                    0.05em 0 0 #ff003c,
+                    -0.025em -0.03em 0 #00ff41,
+                    0.025em 0.03em 0 #ff003c;
+                transform: translate(0);
+            }
+            20% {
+                text-shadow: 
+                    -0.05em -0.03em 0 #ff003c,
+                    0.025em 0.03em 0 #00ff41,
+                    -0.05em -0.06em 0 #ff003c;
+                transform: translate(-2px, 2px);
+            }
+            40% {
+                text-shadow: 
+                    -0.05em 0 0 #00ff41,
+                    0.03em 0.03em 0 #ff003c,
+                    -0.03em -0.03em 0 #ff003c;
+                transform: translate(2px, -2px);
+            }
+            60% {
+                text-shadow: 
+                    0.025em 0.05em 0 #ff003c,
+                    0.05em 0 0 #ff003c,
+                    0 -0.05em 0 #00ff41;
+                transform: translate(-2px, -2px);
+            }
+            80% {
+                text-shadow: 
+                    -0.03em -0.03em 0 #ff003c,
+                    -0.03em 0.03em 0 #ff003c,
+                    -0.03em 0 0 #00ff41;
+                transform: translate(2px, 2px);
+            }
+            100% {
+                text-shadow: 
+                    0.05em 0 0 #ff003c,
+                    -0.025em -0.03em 0 #00ff41,
+                    0.025em 0.03em 0 #ff003c;
+                transform: translate(0);
+            }
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            color: #ff003c;
+            margin-bottom: 40px;
+            text-shadow: 0 0 10px #ff003c;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                text-shadow: 0 0 10px #ff003c;
+            }
+            50% {
+                opacity: 0.7;
+                text-shadow: 0 0 20px #ff003c;
+            }
+        }
+
+        /* Terminal log box */
+        .terminal-log {
+            background-color: rgba(5, 5, 5, 0.8);
+            border: 2px solid #ff003c;
+            border-radius: 4px;
+            padding: 20px;
+            margin: 40px 0;
+            text-align: left;
+            font-size: 0.9rem;
+            line-height: 1.8;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: 0 0 20px rgba(255, 0, 60, 0.3);
+            position: relative;
+        }
+
+        .terminal-log::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                180deg,
+                rgba(255, 0, 60, 0.1) 0%,
+                transparent 50%,
+                rgba(255, 0, 60, 0.1) 100%
+            );
+            pointer-events: none;
+            border-radius: 4px;
+            animation: flicker 0.15s infinite;
+        }
+
+        @keyframes flicker {
+            0% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.95;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .log-line {
+            color: #ffffff;
+            position: relative;
+            z-index: 1;
+            margin: 8px 0;
+        }
+
+        .log-line.error {
+            color: #ff003c;
+        }
+
+        .log-line.status {
+            color: #ff6b00;
+        }
+
+        .status-indicator {
+            color: #ff003c;
+            font-weight: bold;
+        }
+
+        /* Recovery button */
+        .recovery-btn {
+            display: inline-block;
+            margin-top: 40px;
+            padding: 15px 40px;
+            background-color: transparent;
+            border: 2px solid #ff003c;
+            color: #ff003c;
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(255, 0, 60, 0.2);
+        }
+
+        .recovery-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background-color: #ff003c;
+            transition: left 0.3s ease;
+            z-index: -1;
+        }
+
+        .recovery-btn:hover {
+            color: #050505;
+            box-shadow: 0 0 30px rgba(255, 0, 60, 0.6);
+            text-shadow: 0 0 10px rgba(255, 0, 60, 0.5);
+        }
+
+        .recovery-btn:hover::before {
+            left: 0;
+        }
+
+        .recovery-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .error-code {
+                font-size: 6rem;
+            }
+
+            .subtitle {
+                font-size: 1.2rem;
+            }
+
+            .terminal-log {
+                font-size: 0.8rem;
+                padding: 15px;
+            }
+
+            .recovery-btn {
+                padding: 12px 30px;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .error-code {
+                font-size: 4rem;
+            }
+
+            .subtitle {
+                font-size: 1rem;
+            }
+
+            .terminal-log {
+                font-size: 0.75rem;
+                padding: 12px;
+                margin: 30px 0;
+            }
+
+            .recovery-btn {
+                padding: 10px 20px;
+                font-size: 0.8rem;
+            }
+        }

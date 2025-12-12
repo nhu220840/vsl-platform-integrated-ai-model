@@ -1,0 +1,20 @@
+.
+├── admin
+│   ├── admin_contributions.html
+│   ├── admin_dictionary.html
+│   ├── admin.html
+│   └── admin_users.html
+├── contribute.html
+├── dashboard.html
+├── dictionary.html
+├── errors.html
+├── gesture-recognition-hud.html
+├── landing.html
+├── login.html
+├── profile.html
+├── register.html
+├── spelling.html
+├── test_UI-structure.txt
+└── word_detail.html
+
+2 directories, 16 files

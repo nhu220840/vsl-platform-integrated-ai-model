@@ -1,65 +1,269 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useRouter } from "next/navigation";
+
+export default function LandingPage() {
+  const router = useRouter();
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="landing-container">
+      <style jsx>{`
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+
+        .landing-container {
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+          position: relative;
+          background: linear-gradient(
+            135deg,
+            #0a0a0a 0%,
+            #1a1a1a 50%,
+            #0a0a0a 100%
+          );
+          font-family: "Courier New", "Fira Code", monospace;
+          color: #ffffff;
+        }
+
+        /* Animated background - binary code effect */
+        .landing-container::before {
+          content: "";
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-image: repeating-linear-gradient(
+            0deg,
+            rgba(0, 255, 65, 0.03) 0px,
+            rgba(0, 255, 65, 0.03) 1px,
+            transparent 1px,
+            transparent 2px
+          );
+          pointer-events: none;
+          animation: scanlines 8s linear infinite;
+          z-index: 1;
+        }
+
+        @keyframes scanlines {
+          0% {
+            transform: translateY(0);
+          }
+          100% {
+            transform: translateY(10px);
+          }
+        }
+
+        .container {
+          position: relative;
+          z-index: 2;
+          text-align: center;
+          width: 90%;
+          max-width: 600px;
+        }
+
+        /* Top-right user icon */
+        .user-icon {
+          position: fixed;
+          top: 2rem;
+          right: 2rem;
+          z-index: 10;
+          font-size: 1.5rem;
+          color: #00ff41;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .user-icon:hover {
+          transform: scale(1.2);
+          text-shadow: 0 0 10px #00ff41, 0 0 20px #00ff41;
+        }
+
+        .tooltip {
+          position: absolute;
+          bottom: -35px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(0, 255, 65, 0.2);
+          color: #00ff41;
+          padding: 0.5rem 1rem;
+          border: 1px solid #00ff41;
+          border-radius: 4px;
+          font-size: 0.85rem;
+          white-space: nowrap;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.3s ease;
+        }
+
+        .user-icon:hover .tooltip {
+          opacity: 1;
+        }
+
+        /* Main button styling */
+        .start-button {
+          font-size: 4rem;
+          font-weight: bold;
+          color: #00ff41;
+          text-shadow: 0 0 10px #00ff41, 0 0 20px #00ff41, 0 0 30px #00ff41;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          letter-spacing: 0.1em;
+          animation: pulse 2s ease-in-out infinite;
+          display: inline-block;
+          padding: 2rem;
+          border: 2px solid transparent;
+          border-radius: 8px;
+          background: transparent;
+          font-family: "Courier New", monospace;
+        }
+
+        @keyframes pulse {
+          0%,
+          100% {
+            text-shadow: 0 0 10px #00ff41, 0 0 20px #00ff41, 0 0 30px #00ff41;
+            transform: scale(1);
+          }
+          50% {
+            text-shadow: 0 0 20px #00ff41, 0 0 40px #00ff41, 0 0 60px #00ff41;
+            transform: scale(1.05);
+          }
+        }
+
+        .start-button:hover {
+          background: #00ff41;
+          color: #0a0a0a;
+          text-shadow: none;
+          border-color: #00ff41;
+          animation: none;
+          transform: scale(1.1);
+          box-shadow: 0 0 30px #00ff41, inset 0 0 30px rgba(0, 255, 65, 0.3);
+        }
+
+        /* Glitch effect on text */
+        .glitch {
+          position: relative;
+          margin-top: 2rem;
+          margin-bottom: 2rem;
+        }
+
+        .glitch::before,
+        .glitch::after {
+          content: attr(data-text);
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          height: 100%;
+        }
+
+        .glitch::before {
+          animation: glitch-anim-1 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)
+            infinite;
+          color: #ff00ff;
+          z-index: -1;
+        }
+
+        .glitch::after {
+          animation: glitch-anim-2 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)
+            reverse infinite;
+          color: #00ffff;
+          z-index: -2;
+        }
+
+        @keyframes glitch-anim-1 {
+          0% {
+            clip-path: polygon(0 2%, 100% 2%, 100% 5%, 0 5%);
+            transform: translate(0);
+          }
+          20% {
+            clip-path: polygon(0 60%, 100% 60%, 100% 65%, 0 65%);
+            transform: translate(-2px, 2px);
+          }
+          40% {
+            clip-path: polygon(0 30%, 100% 30%, 100% 33%, 0 33%);
+            transform: translate(-2px, -2px);
+          }
+          60% {
+            clip-path: polygon(0 8%, 100% 8%, 100% 12%, 0 12%);
+            transform: translate(2px, 2px);
+          }
+          80% {
+            clip-path: polygon(0 45%, 100% 45%, 100% 48%, 0 48%);
+            transform: translate(2px, -2px);
+          }
+          100% {
+            clip-path: polygon(0 12%, 100% 12%, 100% 16%, 0 16%);
+            transform: translate(0);
+          }
+        }
+
+        @keyframes glitch-anim-2 {
+          0% {
+            clip-path: polygon(0 78%, 100% 78%, 100% 100%, 0 100%);
+            transform: translate(0);
+          }
+          20% {
+            clip-path: polygon(0 11%, 100% 11%, 100% 30%, 0 30%);
+            transform: translate(2px, -2px);
+          }
+          40% {
+            clip-path: polygon(0 69%, 100% 69%, 100% 89%, 0 89%);
+            transform: translate(-2px, 2px);
+          }
+          60% {
+            clip-path: polygon(0 50%, 100% 50%, 100% 70%, 0 70%);
+            transform: translate(-2px, -2px);
+          }
+          80% {
+            clip-path: polygon(0 5%, 100% 5%, 100% 20%, 0 20%);
+            transform: translate(2px, 2px);
+          }
+          100% {
+            clip-path: polygon(0 75%, 100% 75%, 100% 100%, 0 100%);
+            transform: translate(0);
+          }
+        }
+
+        @media (max-width: 768px) {
+          .start-button {
+            font-size: 2.5rem;
+            padding: 1.5rem;
+          }
+
+          .user-icon {
+            top: 1rem;
+            right: 1rem;
+            font-size: 1.25rem;
+          }
+
+          .container {
+            width: 95%;
+          }
+        }
+      `}</style>
+
+      <div className="user-icon" onClick={() => router.push("/login")}>
+        👤
+        <div className="tooltip">Đăng nhập</div>
+      </div>
+
+      <div className="container">
+        <div className="glitch" data-text="BẮT ĐẦU">
+          <button
+            className="start-button"
+            onClick={() => router.push("/user/dashboard")}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            BẮT ĐẦU
+          </button>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

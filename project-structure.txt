@@ -1,0 +1,417 @@
+.
+├── test_UI
+│   ├── admin
+│   │   ├── admin_contributions.html
+│   │   ├── admin_dictionary.html
+│   │   ├── admin.html
+│   │   └── admin_users.html
+│   ├── contribute.html
+│   ├── dashboard.html
+│   ├── dictionary.html
+│   ├── errors.html
+│   ├── gesture-recognition-hud.html
+│   ├── landing.html
+│   ├── login.html
+│   ├── profile.html
+│   ├── register.html
+│   ├── spelling.html
+│   └── word_detail.html
+├── vsl-platform-ai-model
+│   ├── app.py
+│   ├── apps
+│   │   ├── font.ttf
+│   │   ├── __init__.py
+│   │   ├── pipeline_app.py
+│   │   └── webcam_app.py
+│   ├── data
+│   │   └── processed
+│   │       ├── test.csv
+│   │       ├── test_landmarks.csv
+│   │       ├── train.csv
+│   │       ├── train_landmarks_augmented.csv
+│   │       ├── train_landmarks.csv
+│   │       ├── valid.csv
+│   │       └── valid_landmarks.csv
+│   ├── Dockerfile
+│   ├── font.ttf
+│   ├── models
+│   │   ├── ExtraTrees_best_model.pkl
+│   │   ├── model_mlp.pkl
+│   │   ├── scaler.pkl
+│   │   └── sign_language_model.pkl
+│   ├── README.md
+│   ├── requirements_docker.txt
+│   ├── requirements.txt
+│   ├── src
+│   │   ├── data_processing
+│   │   │   ├── __init__.py
+│   │   │   └── mediapipe_converter.py
+│   │   ├── __init__.py
+│   │   ├── training
+│   │   │   ├── __init__.py
+│   │   │   ├── train_gnb.py
+│   │   │   └── train_mlp.py
+│   │   └── utils
+│   │       ├── __init__.py
+│   │       └── vn_accent_restore.py
+│   └── tests
+│       └── __init__.py
+├── vsl-platform-backend
+│   ├── docker-compose.yml
+│   ├── Dockerfile
+│   ├── DOCKER_README.md
+│   ├── elasticsearch-data
+│   │   ├── indices
+│   │   │   └── 2bsSPabeQVyRK118CdqbvA
+│   │   │       ├── 0
+│   │   │       │   ├── index
+│   │   │       │   │   ├── _0.cfe
+│   │   │       │   │   ├── _0.cfs
+│   │   │       │   │   ├── _0.si
+│   │   │       │   │   ├── _1.cfe
+│   │   │       │   │   ├── _1.cfs
+│   │   │       │   │   ├── _1.si
+│   │   │       │   │   ├── _2.cfe
+│   │   │       │   │   ├── _2.cfs
+│   │   │       │   │   ├── _2.si
+│   │   │       │   │   ├── _3.cfe
+│   │   │       │   │   ├── _3.cfs
+│   │   │       │   │   ├── _3.si
+│   │   │       │   │   ├── _4.cfe
+│   │   │       │   │   ├── _4.cfs
+│   │   │       │   │   ├── _4.si
+│   │   │       │   │   ├── _5.cfe
+│   │   │       │   │   ├── _5.cfs
+│   │   │       │   │   ├── _5.si
+│   │   │       │   │   ├── _6.cfe
+│   │   │       │   │   ├── _6.cfs
+│   │   │       │   │   ├── _6.si
+│   │   │       │   │   ├── _7.cfe
+│   │   │       │   │   ├── _7.cfs
+│   │   │       │   │   ├── _7.si
+│   │   │       │   │   ├── segments_u
+│   │   │       │   │   └── write.lock
+│   │   │       │   ├── _state
+│   │   │       │   │   ├── retention-leases-21.st
+│   │   │       │   │   └── state-11.st
+│   │   │       │   └── translog
+│   │   │       │       ├── translog-20.tlog
+│   │   │       │       └── translog.ckp
+│   │   │       └── _state
+│   │   │           └── state-13.st
+│   │   ├── node.lock
+│   │   ├── nodes
+│   │   ├── snapshot_cache
+│   │   │   ├── segments_c
+│   │   │   └── write.lock
+│   │   └── _state
+│   │       ├── _28_2.liv
+│   │       ├── _28.cfe
+│   │       ├── _28.cfs
+│   │       ├── _28.si
+│   │       ├── _29.cfe
+│   │       ├── _29.cfs
+│   │       ├── _29.si
+│   │       ├── _2a.cfe
+│   │       ├── _2a.cfs
+│   │       ├── _2a.si
+│   │       ├── manifest-11.st
+│   │       ├── node-11.st
+│   │       ├── segments_3x
+│   │       └── write.lock
+│   ├── ELASTICSEARCH_SETUP.md
+│   ├── mvnw
+│   ├── mvnw.cmd
+│   ├── pom.xml
+│   ├── postgres-data  [error opening dir]
+│   ├── README.md
+│   ├── src
+│   │   ├── main
+│   │   │   ├── java
+│   │   │   │   └── com
+│   │   │   │       └── capstone
+│   │   │   │           └── vsl
+│   │   │   │               ├── config
+│   │   │   │               │   ├── AsyncConfig.java
+│   │   │   │               │   ├── AuditorAwareImpl.java
+│   │   │   │               │   ├── DatabaseSeeder.java
+│   │   │   │               │   ├── ElasticsearchConfig.java
+│   │   │   │               │   ├── JacksonConfig.java
+│   │   │   │               │   ├── JpaAuditingConfig.java
+│   │   │   │               │   ├── OpenApiConfig.java
+│   │   │   │               │   ├── RestClientConfig.java
+│   │   │   │               │   └── SecurityConfig.java
+│   │   │   │               ├── controller
+│   │   │   │               │   ├── AdminController.java
+│   │   │   │               │   ├── AuthController.java
+│   │   │   │               │   ├── DictionaryController.java
+│   │   │   │               │   ├── GestureController.java
+│   │   │   │               │   ├── RecognitionController.java
+│   │   │   │               │   ├── SpellingController.java
+│   │   │   │               │   ├── UserController.java
+│   │   │   │               │   ├── UserFavoriteController.java
+│   │   │   │               │   └── UserInteractionController.java
+│   │   │   │               ├── document
+│   │   │   │               │   └── DictionaryDocument.java
+│   │   │   │               ├── dto
+│   │   │   │               │   ├── AccentCorrectionRequest.java
+│   │   │   │               │   ├── AccentCorrectionResponse.java
+│   │   │   │               │   ├── AdminPasswordResetRequest.java
+│   │   │   │               │   ├── ApiResponse.java
+│   │   │   │               │   ├── AuthRequest.java
+│   │   │   │               │   ├── AuthResponse.java
+│   │   │   │               │   ├── ContributionDTO.java
+│   │   │   │               │   ├── ContributionRequest.java
+│   │   │   │               │   ├── DashboardStatsDTO.java
+│   │   │   │               │   ├── DictionaryDTO.java
+│   │   │   │               │   ├── FavoriteDTO.java
+│   │   │   │               │   ├── GestureRecognitionRequest.java
+│   │   │   │               │   ├── GestureRecognitionResponse.java
+│   │   │   │               │   ├── GestureToTextResponse.java
+│   │   │   │               │   ├── PasswordChangeRequest.java
+│   │   │   │               │   ├── RegisterRequest.java
+│   │   │   │               │   ├── ReportDTO.java
+│   │   │   │               │   ├── ReportRequest.java
+│   │   │   │               │   ├── RoleUpdateRequest.java
+│   │   │   │               │   ├── SearchHistoryDTO.java
+│   │   │   │               │   ├── UserDTO.java
+│   │   │   │               │   └── UserProfileUpdateRequest.java
+│   │   │   │               ├── entity
+│   │   │   │               │   ├── Alphabet.java
+│   │   │   │               │   ├── BaseEntity.java
+│   │   │   │               │   ├── Contribution.java
+│   │   │   │               │   ├── ContributionStatus.java
+│   │   │   │               │   ├── Dictionary.java
+│   │   │   │               │   ├── Report.java
+│   │   │   │               │   ├── ReportStatus.java
+│   │   │   │               │   ├── Role.java
+│   │   │   │               │   ├── SearchHistory.java
+│   │   │   │               │   ├── UserFavorite.java
+│   │   │   │               │   └── User.java
+│   │   │   │               ├── exception
+│   │   │   │               │   └── GlobalExceptionHandler.java
+│   │   │   │               ├── integration
+│   │   │   │               │   ├── config
+│   │   │   │               │   │   └── AiServiceConfig.java
+│   │   │   │               │   ├── dto
+│   │   │   │               │   │   ├── AiResponseDTO.java
+│   │   │   │               │   │   ├── GestureInputDTO.java
+│   │   │   │               │   │   ├── HandFrameDTO.java
+│   │   │   │               │   │   ├── LandmarkDTO.java
+│   │   │   │               │   │   ├── NlpResponseDTO.java
+│   │   │   │               │   │   └── PythonResponseDTO.java
+│   │   │   │               │   ├── exception
+│   │   │   │               │   │   ├── AccentCorrectionException.java
+│   │   │   │               │   │   ├── AiServiceUnavailableException.java
+│   │   │   │               │   │   ├── ExternalServiceException.java
+│   │   │   │               │   │   ├── GestureRecognitionException.java
+│   │   │   │               │   │   └── PythonServiceException.java
+│   │   │   │               │   ├── GestureIntegrationService.java
+│   │   │   │               │   └── PythonIntegrationService.java
+│   │   │   │               ├── repository
+│   │   │   │               │   ├── AlphabetRepository.java
+│   │   │   │               │   ├── ContributionRepository.java
+│   │   │   │               │   ├── DictionaryRepository.java
+│   │   │   │               │   ├── DictionarySearchRepository.java
+│   │   │   │               │   ├── ReportRepository.java
+│   │   │   │               │   ├── SearchHistoryRepository.java
+│   │   │   │               │   ├── UserFavoriteRepository.java
+│   │   │   │               │   └── UserRepository.java
+│   │   │   │               ├── security
+│   │   │   │               │   ├── CustomUserDetailsService.java
+│   │   │   │               │   ├── JwtAuthenticationFilter.java
+│   │   │   │               │   ├── RateLimitingFilter.java
+│   │   │   │               │   ├── RateLimitingService.java
+│   │   │   │               │   └── UserPrincipal.java
+│   │   │   │               ├── service
+│   │   │   │               │   ├── AdminService.java
+│   │   │   │               │   ├── ContributionService.java
+│   │   │   │               │   ├── DictionaryService.java
+│   │   │   │               │   ├── FavoriteService.java
+│   │   │   │               │   ├── SpellingService.java
+│   │   │   │               │   ├── UserFeatureService.java
+│   │   │   │               │   └── UserProfileService.java
+│   │   │   │               ├── util
+│   │   │   │               │   └── JwtUtils.java
+│   │   │   │               └── VslPlatformBackendApplication.java
+│   │   │   └── resources
+│   │   │       ├── application.properties
+│   │   │       └── es-settings.json
+│   │   └── test
+│   │       └── java
+│   │           └── com
+│   │               └── capstone
+│   │                   └── vsl
+│   │                       └── VslPlatformBackendApplicationTests.java
+│   └── target
+│       ├── classes
+│       │   ├── application.properties
+│       │   ├── com
+│       │   │   └── capstone
+│       │   │       └── vsl
+│       │   │           ├── config
+│       │   │           │   ├── AsyncConfig.class
+│       │   │           │   ├── AuditorAwareImpl.class
+│       │   │           │   ├── DatabaseSeeder.class
+│       │   │           │   ├── ElasticsearchConfig.class
+│       │   │           │   ├── JacksonConfig.class
+│       │   │           │   ├── JpaAuditingConfig.class
+│       │   │           │   ├── OpenApiConfig.class
+│       │   │           │   ├── RestClientConfig.class
+│       │   │           │   └── SecurityConfig.class
+│       │   │           ├── controller
+│       │   │           │   ├── AdminController.class
+│       │   │           │   ├── AuthController.class
+│       │   │           │   ├── DictionaryController.class
+│       │   │           │   ├── GestureController.class
+│       │   │           │   ├── RecognitionController.class
+│       │   │           │   ├── SpellingController.class
+│       │   │           │   ├── UserController.class
+│       │   │           │   ├── UserFavoriteController.class
+│       │   │           │   └── UserInteractionController.class
+│       │   │           ├── document
+│       │   │           │   ├── DictionaryDocument$DictionaryDocumentBuilder.class
+│       │   │           │   └── DictionaryDocument.class
+│       │   │           ├── dto
+│       │   │           │   ├── AccentCorrectionRequest.class
+│       │   │           │   ├── AccentCorrectionResponse.class
+│       │   │           │   ├── AdminPasswordResetRequest.class
+│       │   │           │   ├── ApiResponse$ApiResponseBuilder.class
+│       │   │           │   ├── ApiResponse.class
+│       │   │           │   ├── AuthRequest.class
+│       │   │           │   ├── AuthResponse$AuthResponseBuilder.class
+│       │   │           │   ├── AuthResponse.class
+│       │   │           │   ├── ContributionDTO$ContributionDTOBuilder.class
+│       │   │           │   ├── ContributionDTO.class
+│       │   │           │   ├── ContributionRequest$ContributionRequestBuilder.class
+│       │   │           │   ├── ContributionRequest.class
+│       │   │           │   ├── DashboardStatsDTO$DashboardStatsDTOBuilder.class
+│       │   │           │   ├── DashboardStatsDTO.class
+│       │   │           │   ├── DictionaryDTO$DictionaryDTOBuilder.class
+│       │   │           │   ├── DictionaryDTO.class
+│       │   │           │   ├── FavoriteDTO$FavoriteDTOBuilder.class
+│       │   │           │   ├── FavoriteDTO.class
+│       │   │           │   ├── GestureRecognitionRequest.class
+│       │   │           │   ├── GestureRecognitionResponse.class
+│       │   │           │   ├── GestureToTextResponse$GestureToTextResponseBuilder.class
+│       │   │           │   ├── GestureToTextResponse.class
+│       │   │           │   ├── PasswordChangeRequest.class
+│       │   │           │   ├── RegisterRequest.class
+│       │   │           │   ├── ReportDTO$ReportDTOBuilder.class
+│       │   │           │   ├── ReportDTO.class
+│       │   │           │   ├── ReportRequest.class
+│       │   │           │   ├── RoleUpdateRequest.class
+│       │   │           │   ├── SearchHistoryDTO$SearchHistoryDTOBuilder.class
+│       │   │           │   ├── SearchHistoryDTO.class
+│       │   │           │   ├── UserDTO$UserDTOBuilder.class
+│       │   │           │   ├── UserDTO.class
+│       │   │           │   └── UserProfileUpdateRequest.class
+│       │   │           ├── entity
+│       │   │           │   ├── Alphabet$AlphabetBuilder.class
+│       │   │           │   ├── Alphabet.class
+│       │   │           │   ├── BaseEntity$BaseEntityBuilder.class
+│       │   │           │   ├── BaseEntity.class
+│       │   │           │   ├── Contribution$ContributionBuilder.class
+│       │   │           │   ├── Contribution$ContributionBuilderImpl.class
+│       │   │           │   ├── Contribution.class
+│       │   │           │   ├── ContributionStatus.class
+│       │   │           │   ├── Dictionary$DictionaryBuilder.class
+│       │   │           │   ├── Dictionary$DictionaryBuilderImpl.class
+│       │   │           │   ├── Dictionary.class
+│       │   │           │   ├── Report$ReportBuilder.class
+│       │   │           │   ├── Report.class
+│       │   │           │   ├── ReportStatus.class
+│       │   │           │   ├── Role.class
+│       │   │           │   ├── SearchHistory$SearchHistoryBuilder.class
+│       │   │           │   ├── SearchHistory.class
+│       │   │           │   ├── User$UserBuilder.class
+│       │   │           │   ├── User.class
+│       │   │           │   ├── UserFavorite$UserFavoriteBuilder.class
+│       │   │           │   └── UserFavorite.class
+│       │   │           ├── exception
+│       │   │           │   └── GlobalExceptionHandler.class
+│       │   │           ├── integration
+│       │   │           │   ├── config
+│       │   │           │   │   └── AiServiceConfig.class
+│       │   │           │   ├── dto
+│       │   │           │   │   ├── AiResponseDTO.class
+│       │   │           │   │   ├── GestureInputDTO.class
+│       │   │           │   │   ├── HandFrameDTO.class
+│       │   │           │   │   ├── LandmarkDTO.class
+│       │   │           │   │   ├── NlpResponseDTO.class
+│       │   │           │   │   └── PythonResponseDTO.class
+│       │   │           │   ├── exception
+│       │   │           │   │   ├── AccentCorrectionException.class
+│       │   │           │   │   ├── AiServiceUnavailableException.class
+│       │   │           │   │   ├── ExternalServiceException.class
+│       │   │           │   │   ├── GestureRecognitionException.class
+│       │   │           │   │   └── PythonServiceException.class
+│       │   │           │   ├── GestureIntegrationService.class
+│       │   │           │   ├── PythonIntegrationService$MultipartFileResource.class
+│       │   │           │   └── PythonIntegrationService.class
+│       │   │           ├── repository
+│       │   │           │   ├── AlphabetRepository.class
+│       │   │           │   ├── ContributionRepository.class
+│       │   │           │   ├── DictionaryRepository.class
+│       │   │           │   ├── DictionarySearchRepository.class
+│       │   │           │   ├── ReportRepository.class
+│       │   │           │   ├── SearchHistoryRepository.class
+│       │   │           │   ├── UserFavoriteRepository.class
+│       │   │           │   └── UserRepository.class
+│       │   │           ├── security
+│       │   │           │   ├── CustomUserDetailsService.class
+│       │   │           │   ├── JwtAuthenticationFilter.class
+│       │   │           │   ├── RateLimitingFilter.class
+│       │   │           │   ├── RateLimitingService.class
+│       │   │           │   └── UserPrincipal.class
+│       │   │           ├── service
+│       │   │           │   ├── AdminService.class
+│       │   │           │   ├── ContributionService.class
+│       │   │           │   ├── DictionaryService.class
+│       │   │           │   ├── FavoriteService.class
+│       │   │           │   ├── SpellingService.class
+│       │   │           │   ├── UserFeatureService.class
+│       │   │           │   └── UserProfileService.class
+│       │   │           ├── util
+│       │   │           │   └── JwtUtils.class
+│       │   │           └── VslPlatformBackendApplication.class
+│       │   └── es-settings.json
+│       ├── generated-sources
+│       │   └── annotations
+│       ├── generated-test-sources
+│       │   └── test-annotations
+│       └── test-classes
+│           └── com
+│               └── capstone
+│                   └── vsl
+│                       └── VslPlatformBackendApplicationTests.class
+└── vsl-platform-frontend
+    ├── app
+    │   ├── admin
+    │   │   ├── layout.tsx
+    │   │   └── page.tsx
+    │   ├── assets
+    │   │   ├── css
+    │   │   └── js
+    │   ├── components
+    │   ├── favicon.ico
+    │   ├── globals.css
+    │   ├── layout.tsx
+    │   ├── page.tsx
+    │   └── redux
+    ├── eslint.config.mjs
+    ├── next.config.ts
+    ├── next-env.d.ts
+    ├── package.json
+    ├── package-lock.json
+    ├── postcss.config.mjs
+    ├── public
+    │   ├── file.svg
+    │   ├── globe.svg
+    │   ├── next.svg
+    │   ├── vercel.svg
+    │   └── window.svg
+    ├── README.md
+    └── tsconfig.json
+
+87 directories, 329 files
