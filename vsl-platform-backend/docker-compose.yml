@@ -1,5 +1,11 @@
+# ==================== VSL Platform Docker Compose Configuration ====================
+# Version: Final Production Configuration
+# Architecture: 5 microservices (postgres, elasticsearch, ai-service, backend, frontend)
+# Network: vsl-network (bridge mode)
+# ====================================================================================
+
 services:
-  # ==================== PostgreSQL Database ====================
+  # ==================== Service 1: PostgreSQL Database ====================
   postgres:
     image: postgres:16-alpine
     container_name: vsl-postgres
@@ -11,7 +17,7 @@ services:
     volumes:
       - ./postgres-data:/var/lib/postgresql/data
     ports:
-      - "5433:5432"
+      - "5433:5432" # Host:Container (5433 to avoid conflicts with system Postgres)
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -22,7 +28,7 @@ services:
       - vsl-network
     restart: unless-stopped
 
-  # ==================== Elasticsearch ====================
+  # ==================== Service 2: Elasticsearch ====================
   elasticsearch:
     image: elasticsearch:8.11.1
     container_name: vsl-elasticsearch
@@ -34,10 +40,11 @@ services:
     volumes:
       - ./elasticsearch-data:/usr/share/elasticsearch/data
     ports:
-      - "9200:9200"
-      - "9300:9300"
+      - "9200:9200" # HTTP API
+      - "9300:9300" # Transport
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      test:
+        ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -53,65 +60,7 @@ services:
         soft: 65536
         hard: 65536
 
-  # ==================== Spring Boot Backend ====================
-  backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: vsl-backend
-    ports:
-      - "8081:8080"
-    environment:
-      # Database Configuration
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/vsl_db
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: password
-      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
-      
-      # JPA Configuration
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      SPRING_JPA_SHOW_SQL: "false"
-      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
-      
-      # Elasticsearch Configuration
-      SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
-      SPRING_ELASTICSEARCH_CONNECTION_TIMEOUT: 5s
-      SPRING_ELASTICSEARCH_SOCKET_TIMEOUT: 60s
-      
-      # AI Service Configuration (Unified Python service in Docker)
-      AI_SERVICE_URL: http://ai-service:5000/predict
-      AI_SERVICE_TIMEOUT: 10000
-      
-      # JWT Configuration
-      JWT_SECRET: vsl-platform-secret-key-change-this-in-production-minimum-256-bits-for-hmac-sha256
-      JWT_EXPIRATION: 86400000
-      
-      # Server Configuration
-      SERVER_PORT: 8080
-      
-      # Timezone
-      TZ: Asia/Ho_Chi_Minh
-      
-      # Java Options (optional, for performance tuning)
-      JAVA_OPTS: "-Xmx512m -Xms256m"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      elasticsearch:
-        condition: service_healthy
-      ai-service:
-        condition: service_healthy
-    networks:
-      - vsl-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/api/auth/login || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-
-  # ==================== Python AI Service ====================
+  # ==================== Service 3: Python AI Service (Flask) ====================
   ai-service:
     build:
       context: ../vsl-platform-ai-model
@@ -133,11 +82,108 @@ services:
       retries: 3
       start_period: 40s
 
+  # ==================== Service 4: Spring Boot Backend (API Gateway) ====================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vsl-backend
+    ports:
+      - "8081:8080" # Host:Container (8081 for external access, 8080 internal)
+    environment:
+      # Database Configuration (Container-to-Container)
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/vsl_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+
+      # JPA Configuration
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "false"
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
+
+      # Elasticsearch Configuration (Container-to-Container)
+      SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
+      SPRING_ELASTICSEARCH_CONNECTION_TIMEOUT: 5s
+      SPRING_ELASTICSEARCH_SOCKET_TIMEOUT: 60s
+
+      # AI Service Configuration (Container-to-Container)
+      AI_SERVICE_URL: http://ai-service:5000/predict
+      AI_SERVICE_TIMEOUT: 10000
+
+      # JWT Configuration
+      JWT_SECRET: vsl-platform-secret-key-change-this-in-production-minimum-256-bits-for-hmac-sha256
+      JWT_EXPIRATION: 86400000
+
+      # Server Configuration
+      SERVER_PORT: 8080
+
+      # Timezone
+      TZ: Asia/Ho_Chi_Minh
+
+      # Java Options
+      JAVA_OPTS: "-Xmx512m -Xms256m"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      ai-service:
+        condition: service_healthy
+    networks:
+      - vsl-network
+    restart: unless-stopped
+    healthcheck:
+      # CRITICAL: Health check uses INTERNAL port 8080 with GET-compatible endpoint
+      # Using /api/dictionary/search (permitAll, supports GET) for health check
+      test:
+        [
+          "CMD-SHELL",
+          "curl -f 'http://localhost:8080/api/dictionary/search?keyword=' || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ==================== Service 5: Next.js Frontend ====================
+  frontend:
+    build:
+      context: ../vsl-platform-frontend
+      dockerfile: Dockerfile
+    container_name: vsl-frontend
+    ports:
+      - "3000:3000" # Host:Container
+    environment:
+      # Runtime environment variables
+      TZ: Asia/Ho_Chi_Minh
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: 1
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - vsl-network
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
 # ==================== Networks ====================
 networks:
   vsl-network:
     driver: bridge
-
-# Note: Volumes are defined inline in services above
-# postgres-data and elasticsearch-data are local directories
+    name: vsl-network
+# ==================== Notes ====================
+# - Volumes (postgres-data, elasticsearch-data) are local directories (bind mounts)
+# - Health checks ensure proper startup sequence: DB/ES/AI → Backend → Frontend
+# - Frontend uses host.docker.internal:8081 for browser-based API calls
+# - Backend uses service names (postgres:5432, elasticsearch:9200, ai-service:5000) for internal calls
 

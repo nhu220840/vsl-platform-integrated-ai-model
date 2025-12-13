@@ -1,0 +1,382 @@
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.76kB done
+#1 DONE 0.0s
+
+#2 [ai-service internal] load build definition from Dockerfile
+#2 transferring dockerfile: 929B done
+#2 DONE 0.0s
+
+#3 [backend internal] load build definition from Dockerfile
+#3 transferring dockerfile: 1.34kB done
+#3 DONE 0.0s
+
+#4 [frontend internal] load build definition from Dockerfile
+#4 transferring dockerfile: 1.97kB done
+#4 DONE 0.0s
+
+#5 [frontend internal] load metadata for docker.io/library/node:20-alpine
+#5 ...
+
+#6 [backend internal] load metadata for docker.io/library/eclipse-temurin:21-jre-alpine
+#6 DONE 0.9s
+
+#7 [ai-service 1/6] FROM docker.io/library/python:3.10-slim@sha256:8769cc10045c67eac267537ff0950ce644eeebd9f0e88bec0604548a88f1f33d
+#7 DONE 0.0s
+
+#8 [ai-service 2/6] WORKDIR /app
+#8 CACHED
+
+#9 [ai-service 3/6] RUN apt-get update && apt-get install -y --no-install-recommends     build-essential     curl     && rm -rf /var/lib/apt/lists/*
+#9 CACHED
+
+#10 [ai-service 4/6] COPY requirements_docker.txt requirements.txt
+#10 CACHED
+
+#5 [frontend internal] load metadata for docker.io/library/node:20-alpine
+#5 DONE 0.9s
+
+#11 [frontend internal] load .dockerignore
+#11 transferring context: 438B done
+#11 DONE 0.0s
+
+#12 [ai-service internal] load metadata for docker.io/library/python:3.10-slim
+#12 DONE 1.0s
+
+#13 [frontend deps 1/5] FROM docker.io/library/node:20-alpine@sha256:643e7036aa985317ebfee460005e322aa550c6b6883000d01daefb58689a58e2
+#13 DONE 0.0s
+
+#14 [frontend runner 3/8] RUN apk add --no-cache tzdata &&     cp /usr/share/zoneinfo/Asia/Ho_Chi_Minh /etc/localtime &&     echo "Asia/Ho_Chi_Minh" > /etc/timezone &&     apk del tzdata
+#14 CACHED
+
+#15 [frontend builder 2/5] WORKDIR /app
+#15 CACHED
+
+#16 [frontend runner 4/8] RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
+#16 CACHED
+
+#17 [backend internal] load metadata for docker.io/library/maven:3.9-eclipse-temurin-21
+#17 DONE 1.0s
+
+#18 [ai-service internal] load .dockerignore
+#18 transferring context: 542B done
+#18 DONE 0.0s
+
+#19 [backend internal] load .dockerignore
+#19 transferring context: 183B done
+#19 DONE 0.0s
+
+#20 [frontend internal] load build context
+#20 transferring context: 2.95kB 0.0s done
+#20 DONE 0.0s
+
+#21 [backend build 1/6] FROM docker.io/library/maven:3.9-eclipse-temurin-21@sha256:6fdc855a6ed81d288ca7ca37ac6ff5e9308b612485c0801d70b25a858c83d237
+#21 DONE 0.0s
+
+#22 [backend stage-1 1/5] FROM docker.io/library/eclipse-temurin:21-jre-alpine@sha256:326837fba06a8ff5482a17bafbd65319e64a6e997febb7c85ebe7e3f73c12b11
+#22 DONE 0.0s
+
+#23 [frontend deps 2/5] RUN apk add --no-cache libc6-compat
+#23 CACHED
+
+#24 [frontend builder 3/5] COPY --from=deps /app/node_modules ./node_modules
+#24 CACHED
+
+#25 [frontend deps 5/5] RUN npm ci --legacy-peer-deps
+#25 CACHED
+
+#26 [frontend deps 3/5] WORKDIR /app
+#26 CACHED
+
+#27 [frontend deps 4/5] COPY package.json package-lock.json* ./
+#27 CACHED
+
+#28 [frontend builder 4/5] COPY . .
+#28 CACHED
+
+#29 [ai-service internal] load build context
+#29 transferring context: 889B 0.0s done
+#29 DONE 0.0s
+
+#30 [backend internal] load build context
+#30 transferring context: 8.81kB 0.0s done
+#30 DONE 0.0s
+
+#31 [ai-service 5/6] RUN pip install --no-cache-dir --upgrade pip &&     pip install --no-cache-dir -r requirements.txt
+#31 2.975 Requirement already satisfied: pip in /usr/local/lib/python3.10/site-packages (23.0.1)
+#31 3.368 Collecting pip
+#31 3.570   Downloading pip-25.3-py3-none-any.whl (1.8 MB)
+#31 3.843      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 6.7 MB/s eta 0:00:00
+#31 4.004 Installing collected packages: pip
+#31 4.005   Attempting uninstall: pip
+#31 4.006     Found existing installation: pip 23.0.1
+#31 4.388     Uninstalling pip-23.0.1:
+#31 4.714       Successfully uninstalled pip-23.0.1
+#31 6.340 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+#31 6.341 Successfully installed pip-25.3
+#31 7.784 Collecting Flask>=2.3.0 (from -r requirements.txt (line 2))
+#31 8.000   Downloading flask-3.1.2-py3-none-any.whl.metadata (3.2 kB)
+#31 8.100 Collecting flask-cors>=4.0.0 (from -r requirements.txt (line 3))
+#31 8.153   Downloading flask_cors-6.0.1-py3-none-any.whl.metadata (5.3 kB)
+#31 8.248 Collecting gunicorn>=21.2.0 (from -r requirements.txt (line 4))
+#31 8.303   Downloading gunicorn-23.0.0-py3-none-any.whl.metadata (4.4 kB)
+#31 9.067 Collecting numpy<2.0 (from -r requirements.txt (line 7))
+#31 9.118   Downloading numpy-1.26.4-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (61 kB)
+#31 9.459 Collecting scikit-learn<1.5 (from -r requirements.txt (line 10))
+#31 9.519   Downloading scikit_learn-1.4.2-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (11 kB)
+#31 9.634 Collecting joblib (from -r requirements.txt (line 11))
+#31 9.690   Downloading joblib-1.5.2-py3-none-any.whl.metadata (5.6 kB)
+#31 9.894 Collecting torch (from -r requirements.txt (line 14))
+#31 9.949   Downloading torch-2.9.1-cp310-cp310-manylinux_2_28_x86_64.whl.metadata (30 kB)
+#31 10.15 Collecting transformers (from -r requirements.txt (line 15))
+#31 10.20   Downloading transformers-4.57.3-py3-none-any.whl.metadata (43 kB)
+#31 11.51 Collecting scipy>=1.6.0 (from scikit-learn<1.5->-r requirements.txt (line 10))
+#31 11.57   Downloading scipy-1.15.3-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (61 kB)
+#31 11.69 Collecting threadpoolctl>=2.0.0 (from scikit-learn<1.5->-r requirements.txt (line 10))
+#31 11.74   Downloading threadpoolctl-3.6.0-py3-none-any.whl.metadata (13 kB)
+#31 11.81 Collecting blinker>=1.9.0 (from Flask>=2.3.0->-r requirements.txt (line 2))
+#31 11.87   Downloading blinker-1.9.0-py3-none-any.whl.metadata (1.6 kB)
+#31 11.96 Collecting click>=8.1.3 (from Flask>=2.3.0->-r requirements.txt (line 2))
+#31 12.02   Downloading click-8.3.1-py3-none-any.whl.metadata (2.6 kB)
+#31 12.08 Collecting itsdangerous>=2.2.0 (from Flask>=2.3.0->-r requirements.txt (line 2))
+#31 12.13   Downloading itsdangerous-2.2.0-py3-none-any.whl.metadata (1.9 kB)
+#31 12.21 Collecting jinja2>=3.1.2 (from Flask>=2.3.0->-r requirements.txt (line 2))
+#31 12.27   Downloading jinja2-3.1.6-py3-none-any.whl.metadata (2.9 kB)
+#31 12.47 Collecting markupsafe>=2.1.1 (from Flask>=2.3.0->-r requirements.txt (line 2))
+#31 12.52   Downloading markupsafe-3.0.3-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.7 kB)
+#31 12.61 Collecting werkzeug>=3.1.0 (from Flask>=2.3.0->-r requirements.txt (line 2))
+#31 12.66   Downloading werkzeug-3.1.4-py3-none-any.whl.metadata (4.0 kB)
+#31 12.79 Collecting packaging (from gunicorn>=21.2.0->-r requirements.txt (line 4))
+#31 12.84   Downloading packaging-25.0-py3-none-any.whl.metadata (3.3 kB)
+#31 12.94 Collecting filelock (from torch->-r requirements.txt (line 14))
+#31 13.00   Downloading filelock-3.20.0-py3-none-any.whl.metadata (2.1 kB)
+#31 13.08 Collecting typing-extensions>=4.10.0 (from torch->-r requirements.txt (line 14))
+#31 13.14   Downloading typing_extensions-4.15.0-py3-none-any.whl.metadata (3.3 kB)
+#31 13.22 Collecting sympy>=1.13.3 (from torch->-r requirements.txt (line 14))
+#31 13.27   Downloading sympy-1.14.0-py3-none-any.whl.metadata (12 kB)
+#31 13.37 Collecting networkx>=2.5.1 (from torch->-r requirements.txt (line 14))
+#31 13.42   Downloading networkx-3.4.2-py3-none-any.whl.metadata (6.3 kB)
+#31 13.55 Collecting fsspec>=0.8.5 (from torch->-r requirements.txt (line 14))
+#31 13.60   Downloading fsspec-2025.12.0-py3-none-any.whl.metadata (10 kB)
+#31 13.74 Collecting nvidia-cuda-nvrtc-cu12==12.8.93 (from torch->-r requirements.txt (line 14))
+#31 13.80   Downloading nvidia_cuda_nvrtc_cu12-12.8.93-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl.metadata (1.7 kB)
+#31 13.86 Collecting nvidia-cuda-runtime-cu12==12.8.90 (from torch->-r requirements.txt (line 14))
+#31 13.91   Downloading nvidia_cuda_runtime_cu12-12.8.90-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (1.7 kB)
+#31 13.99 Collecting nvidia-cuda-cupti-cu12==12.8.90 (from torch->-r requirements.txt (line 14))
+#31 14.04   Downloading nvidia_cuda_cupti_cu12-12.8.90-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (1.7 kB)
+#31 14.24 Collecting nvidia-cudnn-cu12==9.10.2.21 (from torch->-r requirements.txt (line 14))
+#31 14.30   Downloading nvidia_cudnn_cu12-9.10.2.21-py3-none-manylinux_2_27_x86_64.whl.metadata (1.8 kB)
+#31 14.37 Collecting nvidia-cublas-cu12==12.8.4.1 (from torch->-r requirements.txt (line 14))
+#31 14.43   Downloading nvidia_cublas_cu12-12.8.4.1-py3-none-manylinux_2_27_x86_64.whl.metadata (1.7 kB)
+#31 14.49 Collecting nvidia-cufft-cu12==11.3.3.83 (from torch->-r requirements.txt (line 14))
+#31 14.55   Downloading nvidia_cufft_cu12-11.3.3.83-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (1.7 kB)
+#31 14.62 Collecting nvidia-curand-cu12==10.3.9.90 (from torch->-r requirements.txt (line 14))
+#31 14.67   Downloading nvidia_curand_cu12-10.3.9.90-py3-none-manylinux_2_27_x86_64.whl.metadata (1.7 kB)
+#31 14.74 Collecting nvidia-cusolver-cu12==11.7.3.90 (from torch->-r requirements.txt (line 14))
+#31 14.80   Downloading nvidia_cusolver_cu12-11.7.3.90-py3-none-manylinux_2_27_x86_64.whl.metadata (1.8 kB)
+#31 14.88 Collecting nvidia-cusparse-cu12==12.5.8.93 (from torch->-r requirements.txt (line 14))
+#31 14.93   Downloading nvidia_cusparse_cu12-12.5.8.93-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (1.8 kB)
+#31 14.99 Collecting nvidia-cusparselt-cu12==0.7.1 (from torch->-r requirements.txt (line 14))
+#31 15.05   Downloading nvidia_cusparselt_cu12-0.7.1-py3-none-manylinux2014_x86_64.whl.metadata (7.0 kB)
+#31 15.11 Collecting nvidia-nccl-cu12==2.27.5 (from torch->-r requirements.txt (line 14))
+#31 15.16   Downloading nvidia_nccl_cu12-2.27.5-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (2.0 kB)
+#31 15.22 Collecting nvidia-nvshmem-cu12==3.3.20 (from torch->-r requirements.txt (line 14))
+#31 15.28   Downloading nvidia_nvshmem_cu12-3.3.20-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (2.1 kB)
+#31 15.34 Collecting nvidia-nvtx-cu12==12.8.90 (from torch->-r requirements.txt (line 14))
+#31 15.39   Downloading nvidia_nvtx_cu12-12.8.90-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (1.8 kB)
+#31 15.46 Collecting nvidia-nvjitlink-cu12==12.8.93 (from torch->-r requirements.txt (line 14))
+#31 15.51   Downloading nvidia_nvjitlink_cu12-12.8.93-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl.metadata (1.7 kB)
+#31 15.57 Collecting nvidia-cufile-cu12==1.13.1.3 (from torch->-r requirements.txt (line 14))
+#31 15.62   Downloading nvidia_cufile_cu12-1.13.1.3-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (1.7 kB)
+#31 15.70 Collecting triton==3.5.1 (from torch->-r requirements.txt (line 14))
+#31 15.76   Downloading triton-3.5.1-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (1.7 kB)
+#31 15.99 Collecting huggingface-hub<1.0,>=0.34.0 (from transformers->-r requirements.txt (line 15))
+#31 16.05   Downloading huggingface_hub-0.36.0-py3-none-any.whl.metadata (14 kB)
+#31 16.43 Collecting pyyaml>=5.1 (from transformers->-r requirements.txt (line 15))
+#31 16.48   Downloading pyyaml-6.0.3-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+#31 17.62 Collecting regex!=2019.12.17 (from transformers->-r requirements.txt (line 15))
+#31 17.68   Downloading regex-2025.11.3-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (40 kB)
+#31 17.81 Collecting requests (from transformers->-r requirements.txt (line 15))
+#31 17.86   Downloading requests-2.32.5-py3-none-any.whl.metadata (4.9 kB)
+#31 18.38 Collecting tokenizers<=0.23.0,>=0.22.0 (from transformers->-r requirements.txt (line 15))
+#31 18.43   Downloading tokenizers-0.22.1-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.8 kB)
+#31 18.84 Collecting safetensors>=0.4.3 (from transformers->-r requirements.txt (line 15))
+#31 18.89   Downloading safetensors-0.7.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.1 kB)
+#31 19.05 Collecting tqdm>=4.27 (from transformers->-r requirements.txt (line 15))
+#31 19.10   Downloading tqdm-4.67.1-py3-none-any.whl.metadata (57 kB)
+#31 19.37 Collecting hf-xet<2.0.0,>=1.1.3 (from huggingface-hub<1.0,>=0.34.0->transformers->-r requirements.txt (line 15))
+#31 19.42   Downloading hf_xet-1.2.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.9 kB)
+#31 19.62 Collecting mpmath<1.4,>=1.1.0 (from sympy>=1.13.3->torch->-r requirements.txt (line 14))
+#31 19.67   Downloading mpmath-1.3.0-py3-none-any.whl.metadata (8.6 kB)
+#31 20.09 Collecting charset_normalizer<4,>=2 (from requests->transformers->-r requirements.txt (line 15))
+#31 20.14   Downloading charset_normalizer-3.4.4-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (37 kB)
+#31 20.23 Collecting idna<4,>=2.5 (from requests->transformers->-r requirements.txt (line 15))
+#31 20.28   Downloading idna-3.11-py3-none-any.whl.metadata (8.4 kB)
+#31 20.40 Collecting urllib3<3,>=1.21.1 (from requests->transformers->-r requirements.txt (line 15))
+#31 20.46   Downloading urllib3-2.6.2-py3-none-any.whl.metadata (6.6 kB)
+#31 20.56 Collecting certifi>=2017.4.17 (from requests->transformers->-r requirements.txt (line 15))
+#31 20.61   Downloading certifi-2025.11.12-py3-none-any.whl.metadata (2.5 kB)
+#31 20.69 Downloading numpy-1.26.4-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (18.2 MB)
+#31 22.32    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 18.2/18.2 MB 11.5 MB/s  0:00:01
+#31 22.37 Downloading scikit_learn-1.4.2-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (12.1 MB)
+#31 23.41    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 12.1/12.1 MB 11.7 MB/s  0:00:01
+#31 23.47 Downloading flask-3.1.2-py3-none-any.whl (103 kB)
+#31 23.53 Downloading flask_cors-6.0.1-py3-none-any.whl (13 kB)
+#31 23.60 Downloading gunicorn-23.0.0-py3-none-any.whl (85 kB)
+#31 23.64 Downloading joblib-1.5.2-py3-none-any.whl (308 kB)
+#31 23.72 Downloading torch-2.9.1-cp310-cp310-manylinux_2_28_x86_64.whl (899.8 MB)
+#31 143.6    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 899.8/899.8 MB 11.7 MB/s  0:01:59
+#31 143.6 Downloading nvidia_cublas_cu12-12.8.4.1-py3-none-manylinux_2_27_x86_64.whl (594.3 MB)
+#31 ...
+
+#32 [backend build 5/6] COPY src ./src
+#32 CACHED
+
+#33 [backend stage-1 4/5] WORKDIR /app
+#33 CACHED
+
+#34 [backend build 2/6] WORKDIR /app
+#34 CACHED
+
+#35 [backend build 3/6] COPY pom.xml .
+#35 CACHED
+
+#36 [backend stage-1 2/5] RUN apk add --no-cache tzdata wget &&     cp /usr/share/zoneinfo/Asia/Ho_Chi_Minh /etc/localtime &&     echo "Asia/Ho_Chi_Minh" > /etc/timezone &&     apk del tzdata
+#36 CACHED
+
+#37 [backend build 4/6] RUN mvn dependency:go-offline -B
+#37 CACHED
+
+#38 [backend build 6/6] RUN mvn clean package -DskipTests -B
+#38 CACHED
+
+#39 [backend stage-1 3/5] RUN addgroup -S spring && adduser -S spring -G spring
+#39 CACHED
+
+#40 [backend stage-1 5/5] COPY --from=build /app/target/*.jar app.jar
+#40 CACHED
+
+#41 [backend] exporting to image
+#41 exporting layers done
+#41 writing image sha256:026ffa305f6716145f192e8051ec768c6c6fa62fbd0a251f525de19a7e131641 done
+#41 naming to docker.io/library/vsl-platform-backend-backend done
+#41 DONE 0.0s
+
+#42 [backend] resolving provenance for metadata file
+#42 DONE 0.0s
+
+#43 [frontend builder 5/5] RUN npm run build
+#43 0.728 
+#43 0.728 > vsl-platform-frontend@0.1.0 build
+#43 0.728 > next build
+#43 0.728 
+#43 1.051 [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+#43 1.823    ▲ Next.js 16.0.3 (Turbopack)
+#43 1.823 
+#43 1.877    Creating an optimized production build ...
+#43 2.042 [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+#43 ...
+
+#31 [ai-service 5/6] RUN pip install --no-cache-dir --upgrade pip &&     pip install --no-cache-dir -r requirements.txt
+#31 194.4    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 594.3/594.3 MB 11.7 MB/s  0:00:50
+#31 194.5 Downloading nvidia_cuda_cupti_cu12-12.8.90-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (10.2 MB)
+#31 195.4    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 10.2/10.2 MB 11.7 MB/s  0:00:00
+#31 195.4 Downloading nvidia_cuda_nvrtc_cu12-12.8.93-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl (88.0 MB)
+#31 202.9    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 88.0/88.0 MB 11.7 MB/s  0:00:07
+#31 203.0 Downloading nvidia_cuda_runtime_cu12-12.8.90-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (954 kB)
+#31 203.1    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 954.8/954.8 kB 12.4 MB/s  0:00:00
+#31 203.1 Downloading nvidia_cudnn_cu12-9.10.2.21-py3-none-manylinux_2_27_x86_64.whl (706.8 MB)
+#31 ...
+
+#43 [frontend builder 5/5] RUN npm run build
+#43 25.09 
+#43 25.09 > Build error occurred
+#43 25.09 Error: Turbopack build failed with 3 errors:
+#43 25.09 ./styles/admin-dictionary.module.css
+#43 25.09 Transforming CSS failed
+#43 25.09 Selector "table" is not pure. Pure selectors must contain at least one local class or id.
+#43 25.09 
+#43 25.09 Import traces:
+#43 25.09   Client Component Browser:
+#43 25.09     ./styles/admin-dictionary.module.css [Client Component Browser]
+#43 25.09     ./app/admin/dictionary/page.tsx [Client Component Browser]
+#43 25.09     ./app/admin/dictionary/page.tsx [Server Component]
+#43 25.09 
+#43 25.09   Client Component SSR:
+#43 25.09     ./styles/admin-dictionary.module.css [Client Component SSR]
+#43 25.09     ./app/admin/dictionary/page.tsx [Client Component SSR]
+#43 25.09     ./app/admin/dictionary/page.tsx [Server Component]
+#43 25.09 
+#43 25.09 
+#43 25.09 ./styles/admin-dictionary.module.css
+#43 25.09 Transforming CSS failed
+#43 25.09 Selector "td" is not pure. Pure selectors must contain at least one local class or id.
+#43 25.09 
+#43 25.09 Import traces:
+#43 25.09   Client Component Browser:
+#43 25.09     ./styles/admin-dictionary.module.css [Client Component Browser]
+#43 25.09     ./app/admin/dictionary/page.tsx [Client Component Browser]
+#43 25.09     ./app/admin/dictionary/page.tsx [Server Component]
+#43 25.09 
+#43 25.09   Client Component SSR:
+#43 25.09     ./styles/admin-dictionary.module.css [Client Component SSR]
+#43 25.09     ./app/admin/dictionary/page.tsx [Client Component SSR]
+#43 25.09     ./app/admin/dictionary/page.tsx [Server Component]
+#43 25.09 
+#43 25.09 
+#43 25.09 ./styles/admin-dictionary.module.css
+#43 25.09 Transforming CSS failed
+#43 25.09 Selector "th" is not pure. Pure selectors must contain at least one local class or id.
+#43 25.09 
+#43 25.09 Import traces:
+#43 25.09   Client Component Browser:
+#43 25.09     ./styles/admin-dictionary.module.css [Client Component Browser]
+#43 25.09     ./app/admin/dictionary/page.tsx [Client Component Browser]
+#43 25.09     ./app/admin/dictionary/page.tsx [Server Component]
+#43 25.09 
+#43 25.09   Client Component SSR:
+#43 25.09     ./styles/admin-dictionary.module.css [Client Component SSR]
+#43 25.09     ./app/admin/dictionary/page.tsx [Client Component SSR]
+#43 25.09     ./app/admin/dictionary/page.tsx [Server Component]
+#43 25.09 
+#43 25.09 
+#43 25.09     at ignore-listed frames
+#43 25.18 npm notice
+#43 25.18 npm notice New major version of npm available! 10.8.2 -> 11.7.0
+#43 25.18 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.7.0
+#43 25.18 npm notice To update run: npm install -g npm@11.7.0
+#43 25.18 npm notice
+#43 ERROR: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
+
+#31 [ai-service 5/6] RUN pip install --no-cache-dir --upgrade pip &&     pip install --no-cache-dir -r requirements.txt
+#31 CANCELED
+------
+ > [frontend builder 5/5] RUN npm run build:
+25.09     ./app/admin/dictionary/page.tsx [Client Component SSR]
+25.09     ./app/admin/dictionary/page.tsx [Server Component]
+25.09 
+25.09 
+25.09     at ignore-listed frames
+25.18 npm notice
+25.18 npm notice New major version of npm available! 10.8.2 -> 11.7.0
+25.18 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.7.0
+25.18 npm notice To update run: npm install -g npm@11.7.0
+25.18 npm notice
+------
+Dockerfile:34
+
+--------------------
+
+  32 |     
+
+  33 |     # Build Next.js application
+
+  34 | >>> RUN npm run build
+
+  35 |     
+
+  36 |     # ==================== Production Stage ====================
+
+--------------------
+
+target frontend: failed to solve: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
+

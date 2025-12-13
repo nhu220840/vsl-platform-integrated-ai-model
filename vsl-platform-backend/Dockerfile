@@ -17,8 +17,8 @@ RUN mvn clean package -DskipTests -B
 # ==================== Run Stage ====================
 FROM eclipse-temurin:21-jre-alpine
 
-# Install tzdata and wget for timezone support and healthcheck
-RUN apk add --no-cache tzdata wget && \
+# Install tzdata, wget, and curl for timezone support and healthcheck
+RUN apk add --no-cache tzdata wget curl && \
     cp /usr/share/zoneinfo/Asia/Ho_Chi_Minh /etc/localtime && \
     echo "Asia/Ho_Chi_Minh" > /etc/timezone && \
     apk del tzdata
@@ -37,7 +37,6 @@ COPY --from=build /app/target/*.jar app.jar
 
 # Expose port
 EXPOSE 8080
-
 # Health check (simple HTTP check - adjust if actuator is enabled)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/auth/login || exit 1

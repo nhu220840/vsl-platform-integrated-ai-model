@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Global CSS Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 :root {
   /* Bộ màu Cyberpunk */
   --bg-color: #050505;
@@ -9,9 +16,9 @@
   --dim-color: #003b0f;
   --alert-color: #ff003c;
   --text-color: #eeeeee;
-  
+
   /* Font chữ code */
-  --font-mono: 'Space Mono', monospace; 
+  --font-mono: "Space Mono", monospace;
 }
 
 body {
@@ -26,10 +33,12 @@ body {
 body::before {
   content: "";
   position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: 
-      linear-gradient(rgba(0, 255, 65, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0, 255, 65, 0.03) 1px, transparent 1px);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(rgba(0, 255, 65, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 65, 0.03) 1px, transparent 1px);
   background-size: 40px 40px;
   z-index: -50;
   pointer-events: none;
