@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation"; // 1. Import hook
+import { usePathname } from "next/navigation";
 import { 
   Terminal, 
   LayoutDashboard, 
@@ -10,7 +10,7 @@ import {
   FileText, 
   BookOpen, 
   LogOut, 
-  Lock, // Icon ổ khóa cho header sidebar
+  Lock, 
   Plus, 
   Edit, 
   Trash2, 
@@ -19,11 +19,13 @@ import {
   Save,
   Shield,
   UserCheck,
-  Activity
+  Activity,
+  Eye, // Icon xem profile
+  Key  // Icon mật khẩu
 } from "lucide-react";
 import styles from "../../../styles/admin-users.module.css";
 
-// Interface User
+// Interface User cập nhật thêm Avatar
 interface User {
   id: number;
   username: string;
@@ -32,12 +34,13 @@ interface User {
   status: "ACTIVE" | "INACTIVE";
   lastLogin: string;
   joinDate: string;
+  avatar?: string; // Optional avatar URL
 }
 
 export default function AdminUsersPage() {
-  const pathname = usePathname(); // 2. Lấy đường dẫn hiện tại
+  const pathname = usePathname();
 
-  // 3. Cấu hình Menu
+  // Menu Sidebar
   const menuItems = [
     { label: "[DASHBOARD]", href: "/admin", icon: LayoutDashboard },
     { label: "[USER_MANAGER]", href: "/admin/users", icon: Users },
@@ -45,7 +48,7 @@ export default function AdminUsersPage() {
     { label: "[DICTIONARY_DB]", href: "/admin/dictionary", icon: BookOpen },
   ];
 
-  // --- LOGIC USERS (Data & State) ---
+  // Mock Data có Avatar
   const [users, setUsers] = useState<User[]>([
     {
       id: 1,
@@ -54,7 +57,8 @@ export default function AdminUsersPage() {
       role: "ADMIN",
       status: "ACTIVE",
       lastLogin: "Today, 10:42 AM",
-      joinDate: "01/01/2024"
+      joinDate: "01/01/2024",
+      avatar: "https://ui-avatars.com/api/?name=Admin+Core&background=0D8ABC&color=fff"
     },
     {
       id: 2,
@@ -63,7 +67,8 @@ export default function AdminUsersPage() {
       role: "MODERATOR",
       status: "ACTIVE",
       lastLogin: "Yesterday, 15:30 PM",
-      joinDate: "15/02/2024"
+      joinDate: "15/02/2024",
+      avatar: "https://ui-avatars.com/api/?name=Contributor+01&background=random"
     },
     {
       id: 3,
@@ -72,7 +77,8 @@ export default function AdminUsersPage() {
       role: "USER",
       status: "INACTIVE",
       lastLogin: "2 days ago",
-      joinDate: "20/05/2024"
+      joinDate: "20/05/2024",
+      avatar: "https://ui-avatars.com/api/?name=User+Test&background=random"
     },
     {
       id: 4,
@@ -81,14 +87,23 @@ export default function AdminUsersPage() {
       role: "USER",
       status: "ACTIVE",
       lastLogin: "Just now",
-      joinDate: "10/12/2024"
+      joinDate: "10/12/2024",
+      avatar: "https://ui-avatars.com/api/?name=Newbie&background=random"
     }
   ]);
 
+  // States
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // State cho Modal Edit/Create
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<Partial<User>>({});
   const [isEditMode, setIsEditMode] = useState(false);
+  const [newPassword, setNewPassword] = useState(""); // State lưu mật khẩu mới
+
+  // State cho Modal View Profile
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [viewUser, setViewUser] = useState<User | null>(null);
 
   // Filter Logic
   const filteredUsers = users.filter(user => 
@@ -96,17 +111,28 @@ export default function AdminUsersPage() {
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Handlers
+  // --- Handlers ---
+
+  // Mở Modal Thêm mới
   const handleAddUser = () => {
     setCurrentUser({ role: "USER", status: "ACTIVE" });
     setIsEditMode(false);
+    setNewPassword("");
     setIsModalOpen(true);
   };
 
+  // Mở Modal Sửa
   const handleEditUser = (user: User) => {
     setCurrentUser(user);
     setIsEditMode(true);
+    setNewPassword(""); // Reset password field
     setIsModalOpen(true);
+  };
+
+  // Mở Modal Xem Profile
+  const handleViewProfile = (user: User) => {
+    setViewUser(user);
+    setIsProfileModalOpen(true);
   };
 
   const handleDeleteUser = (id: number) => {
@@ -116,7 +142,11 @@ export default function AdminUsersPage() {
   };
 
   const handleSave = () => {
-    alert("Saved user data successfully! (Mock Action)");
+    // Logic lưu password mới nếu có
+    if (newPassword) {
+        console.log(`Updating password for user ${currentUser.username} to: ${newPassword}`);
+    }
+    alert("User data saved successfully! (Mock Action)");
     setIsModalOpen(false);
   };
 
@@ -139,7 +169,7 @@ export default function AdminUsersPage() {
         </div>
       </div>
 
-      {/* --- SIDEBAR (Dynamic Logic) --- */}
+      {/* --- SIDEBAR --- */}
       <aside className={styles.sidebar}>
         <div className={styles["sidebar-header"]}>
            <div className="flex items-center gap-2">
@@ -149,11 +179,9 @@ export default function AdminUsersPage() {
         </div>
         
         <ul className={styles["sidebar-menu"]}>
-          {/* 4. Render Menu tự động */}
           {menuItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
-            
             return (
               <li key={item.href}>
                 <Link 
@@ -166,7 +194,6 @@ export default function AdminUsersPage() {
               </li>
             );
           })}
-
           <li>
             <div className={styles["menu-item"]} style={{cursor: 'pointer'}}>
                <span className={styles["icon-wrapper"]}><LogOut size={16}/></span>
@@ -187,6 +214,7 @@ export default function AdminUsersPage() {
 
         {/* Stats Cards */}
         <div className={styles["stats-container"]}>
+          {/* ... (Giữ nguyên phần stats) ... */}
           <div className={styles["stat-card"]}>
             <div className={styles["stat-icon"]}><Users /></div>
             <div className={styles["stat-info"]}>
@@ -258,7 +286,23 @@ export default function AdminUsersPage() {
               {filteredUsers.map((user) => (
                 <tr key={user.id}>
                   <td>#{user.id}</td>
-                  <td style={{fontWeight: 'bold', color: '#fff'}}>{user.username}</td>
+                  <td>
+                    {/* Cột Username có Avatar và Clickable */}
+                    <div className={styles["user-info-cell"]}>
+                      <img 
+                        src={user.avatar || "/default-avatar.png"} 
+                        alt="avt" 
+                        className={styles["user-avatar"]}
+                      />
+                      <span 
+                        className={styles["clickable-name"]}
+                        onClick={() => handleViewProfile(user)}
+                        title="Click to view profile"
+                      >
+                        {user.username}
+                      </span>
+                    </div>
+                  </td>
                   <td>{user.email}</td>
                   <td>
                     <span className={`${styles["role-badge"]} ${user.role === 'ADMIN' ? styles["role-admin"] : styles["role-user"]}`}>
@@ -271,10 +315,18 @@ export default function AdminUsersPage() {
                   <td>{user.lastLogin}</td>
                   <td>
                     <div className={styles["action-buttons"]}>
+                      {/* Nút View Profile Nhanh */}
+                      <button 
+                        className={styles["btn-icon"]}
+                        onClick={() => handleViewProfile(user)}
+                        title="View Profile"
+                      >
+                        <Eye size={14} />
+                      </button>
                       <button 
                         className={styles["btn-icon"]}
                         onClick={() => handleEditUser(user)}
-                        title="Edit User"
+                        title="Edit User & Password"
                       >
                         <Edit size={14} />
                       </button>
@@ -295,7 +347,64 @@ export default function AdminUsersPage() {
 
       </main>
 
-      {/* Modal Popup */}
+      {/* --- MODAL 1: VIEW PROFILE --- */}
+      {isProfileModalOpen && viewUser && (
+        <div className={styles["modal-overlay"]}>
+          <div className={styles["modal"]}>
+            <div className={styles["modal-header"]}>
+              <span className={styles["modal-title"]}>USER PROFILE</span>
+              <button className={styles["modal-close"]} onClick={() => setIsProfileModalOpen(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className={styles["modal-body"]}>
+              <div className={styles["profile-view-header"]}>
+                <img 
+                  src={viewUser.avatar} 
+                  alt="Avatar" 
+                  className={styles["profile-large-avatar"]} 
+                />
+                <div className={styles["profile-username"]}>{viewUser.username}</div>
+                <div className={styles["profile-email"]}>{viewUser.email}</div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className={styles["form-group"]}>
+                  <label className={styles["form-label"]}>ROLE</label>
+                  <input type="text" className={styles["form-input"]} value={viewUser.role} readOnly />
+                </div>
+                <div className={styles["form-group"]}>
+                  <label className={styles["form-label"]}>STATUS</label>
+                  <input type="text" className={styles["form-input"]} value={viewUser.status} readOnly />
+                </div>
+                <div className={styles["form-group"]}>
+                  <label className={styles["form-label"]}>JOINED DATE</label>
+                  <input type="text" className={styles["form-input"]} value={viewUser.joinDate} readOnly />
+                </div>
+                <div className={styles["form-group"]}>
+                  <label className={styles["form-label"]}>LAST LOGIN</label>
+                  <input type="text" className={styles["form-input"]} value={viewUser.lastLogin} readOnly />
+                </div>
+              </div>
+            </div>
+
+            <div className={styles["modal-footer"]}>
+              <button 
+                className={`${styles["btn-modal"]} ${styles["btn-save"]}`}
+                onClick={() => {
+                  setIsProfileModalOpen(false);
+                  handleEditUser(viewUser); // Chuyển sang chế độ Edit từ View
+                }}
+              >
+                <Edit size={14} style={{marginRight: 5}}/> EDIT PROFILE
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL 2: EDIT / CREATE USER --- */}
       {isModalOpen && (
         <div className={styles["modal-overlay"]}>
           <div className={styles["modal"]}>
@@ -349,16 +458,21 @@ export default function AdminUsersPage() {
                 </div>
               </div>
 
-              {!isEditMode && (
-                <div className={styles["form-group"]}>
-                  <label className={styles["form-label"]}>INITIAL PASSWORD</label>
-                  <input 
-                    type="password" 
-                    className={styles["form-input"]} 
-                    placeholder="••••••••"
-                  />
-                </div>
-              )}
+              {/* Phần Đổi Mật Khẩu */}
+              <div className={styles["form-group"]} style={{marginTop: '10px', borderTop: '1px dashed #333', paddingTop: '15px'}}>
+                <label className={styles["form-label"]} style={{color: '#fff', display:'flex', alignItems:'center', gap:'5px'}}>
+                  <Key size={12} /> 
+                  {isEditMode ? "CHANGE PASSWORD (OPTIONAL)" : "INITIAL PASSWORD"}
+                </label>
+                <input 
+                  type="password" 
+                  className={styles["form-input"]} 
+                  placeholder={isEditMode ? "Leave blank to keep current..." : "Required..."}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+              </div>
+
             </div>
 
             <div className={styles["modal-footer"]}>

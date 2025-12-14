@@ -10,8 +10,7 @@
   overflow-x: hidden;
 }
 
-
-/* --- SIDEBAR (Local Logic) --- */
+/* --- SIDEBAR --- */
 .sidebar {
   position: fixed;
   left: 0;
@@ -266,6 +265,7 @@
   padding: 12px 15px;
   border-bottom: 1px solid rgba(51, 51, 51, 0.5);
   color: #ccc;
+  vertical-align: middle;
 }
 
 .data-table tr:hover {
@@ -274,6 +274,38 @@
 
 .data-table tr:hover td {
   color: #fff;
+}
+
+/* NEW: User Info Cell (Avatar + Name) */
+.user-info-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #00ff41;
+  object-fit: cover;
+  background-color: #000;
+}
+
+/* NEW: Clickable Name Style */
+.clickable-name {
+  font-weight: bold;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  position: relative;
+}
+
+.clickable-name:hover {
+  color: #00ff41;
+  text-shadow: 0 0 8px #00ff41;
+  text-decoration: underline;
 }
 
 .role-badge {
@@ -392,6 +424,36 @@
   padding: 20px;
 }
 
+/* NEW: Profile specific styles in modal */
+.profile-view-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.profile-large-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 2px solid #00ff41;
+  margin-bottom: 10px;
+  box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
+}
+
+.profile-username {
+  font-size: 18px;
+  font-weight: bold;
+  color: #00ff41;
+  text-transform: uppercase;
+}
+
+.profile-email {
+  font-size: 12px;
+  color: #888;
+}
+
 .form-group {
   margin-bottom: 15px;
 }
@@ -417,6 +479,13 @@
 .form-input:focus, .form-select:focus {
   border-color: #00ff41;
   box-shadow: 0 0 10px rgba(0, 255, 65, 0.1);
+}
+
+.form-input[readonly] {
+  background-color: #0a0a0a;
+  border-color: #222;
+  color: #aaa;
+  cursor: not-allowed;
 }
 
 .modal-footer {
