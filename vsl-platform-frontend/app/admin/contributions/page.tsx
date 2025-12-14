@@ -10,7 +10,6 @@ import {
   Upload, 
   BookOpen, 
   LogOut, 
-  ShieldAlert
 } from "lucide-react";
 import styles from "../../../styles/admin-contributions.module.css";
 
