@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react"; // 1. Thêm useEffect
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
@@ -20,12 +20,12 @@ import {
   Shield,
   UserCheck,
   Activity,
-  Eye, // Icon xem profile
-  Key  // Icon mật khẩu
+  Eye, 
+  Key,
+  User as UserIcon // 2. Đổi tên icon User để tránh trùng lặp
 } from "lucide-react";
 import styles from "../../../styles/admin-users.module.css";
 
-// Interface User cập nhật thêm Avatar
 interface User {
   id: number;
   username: string;
@@ -34,21 +34,35 @@ interface User {
   status: "ACTIVE" | "INACTIVE";
   lastLogin: string;
   joinDate: string;
-  avatar?: string; // Optional avatar URL
+  avatar?: string;
 }
 
 export default function AdminUsersPage() {
   const pathname = usePathname();
 
-  // Menu Sidebar
+  // 3. Logic đồng hồ và Admin Name
+  const [currentDateTime, setCurrentDateTime] = useState<string>("");
+  const adminName = "SHERRY";
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('en-GB'); 
+      const timeStr = now.toLocaleTimeString('en-GB');
+      setCurrentDateTime(`${dateStr} - ${timeStr}`);
+    };
+    updateTime();
+    const timer = setInterval(updateTime, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   const menuItems = [
     { label: "[DASHBOARD]", href: "/admin", icon: LayoutDashboard },
-    { label: "[USER_MANAGER]", href: "/admin/users", icon: Users },
+    { label: "[USER_MANAGEMENT]", href: "/admin/users", icon: Users },
     { label: "[CONTRIBUTIONS]", href: "/admin/contributions", icon: FileText },
     { label: "[DICTIONARY_DB]", href: "/admin/dictionary", icon: BookOpen },
   ];
 
-  // Mock Data có Avatar
   const [users, setUsers] = useState<User[]>([
     {
       id: 1,
@@ -92,28 +106,19 @@ export default function AdminUsersPage() {
     }
   ]);
 
-  // States
   const [searchTerm, setSearchTerm] = useState("");
-  
-  // State cho Modal Edit/Create
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<Partial<User>>({});
   const [isEditMode, setIsEditMode] = useState(false);
-  const [newPassword, setNewPassword] = useState(""); // State lưu mật khẩu mới
-
-  // State cho Modal View Profile
+  const [newPassword, setNewPassword] = useState(""); 
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [viewUser, setViewUser] = useState<User | null>(null);
 
-  // Filter Logic
   const filteredUsers = users.filter(user => 
     user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // --- Handlers ---
-
-  // Mở Modal Thêm mới
   const handleAddUser = () => {
     setCurrentUser({ role: "USER", status: "ACTIVE" });
     setIsEditMode(false);
@@ -121,15 +126,13 @@ export default function AdminUsersPage() {
     setIsModalOpen(true);
   };
 
-  // Mở Modal Sửa
   const handleEditUser = (user: User) => {
     setCurrentUser(user);
     setIsEditMode(true);
-    setNewPassword(""); // Reset password field
+    setNewPassword(""); 
     setIsModalOpen(true);
   };
 
-  // Mở Modal Xem Profile
   const handleViewProfile = (user: User) => {
     setViewUser(user);
     setIsProfileModalOpen(true);
@@ -142,7 +145,6 @@ export default function AdminUsersPage() {
   };
 
   const handleSave = () => {
-    // Logic lưu password mới nếu có
     if (newPassword) {
         console.log(`Updating password for user ${currentUser.username} to: ${newPassword}`);
     }
@@ -153,7 +155,7 @@ export default function AdminUsersPage() {
   return (
     <div className={styles["admin-container"]}>
       
-      {/* --- STATUS BAR --- */}
+      {/* 4. STATUS BAR MỚI */}
       <div className={styles["status-bar"]}>
         <div className={styles["status-bar-left"]}>
             <div className={styles["status-item"]}>
@@ -161,15 +163,15 @@ export default function AdminUsersPage() {
                 <span>SYSTEM: ONLINE</span>
             </div>
             <div className={styles["status-item"]}>
-                <span>USER_DB: CONNECTED</span>
+                <UserIcon size={14} /> {/* Dùng UserIcon ở đây */}
+                <span style={{textTransform: 'uppercase'}}>ADMIN: {adminName}</span>
             </div>
         </div>
         <div className={styles["status-item"]}>
-            <span>SECURE_MODE</span>
+            <span>{currentDateTime}</span>
         </div>
       </div>
 
-      {/* --- SIDEBAR --- */}
       <aside className={styles.sidebar}>
         <div className={styles["sidebar-header"]}>
            <div className="flex items-center gap-2">
@@ -203,18 +205,14 @@ export default function AdminUsersPage() {
         </ul>
       </aside>
 
-      {/* --- MAIN CONTENT --- */}
       <main className={styles["main-content"]}>
-        
         <div className={styles["page-header"]}>
           <div className={styles["page-title"]}>
             <Users size={24} /> USER MANAGEMENT
           </div>
         </div>
 
-        {/* Stats Cards */}
         <div className={styles["stats-container"]}>
-          {/* ... (Giữ nguyên phần stats) ... */}
           <div className={styles["stat-card"]}>
             <div className={styles["stat-icon"]}><Users /></div>
             <div className={styles["stat-info"]}>
@@ -249,7 +247,6 @@ export default function AdminUsersPage() {
           </div>
         </div>
 
-        {/* Toolbar */}
         <div className={styles["toolbar"]}>
           <div className="flex gap-2 flex-1">
             <input 
@@ -268,7 +265,6 @@ export default function AdminUsersPage() {
           </button>
         </div>
 
-        {/* Data Table */}
         <div className={styles["table-container"]}>
           <table className={styles["data-table"]}>
             <thead>
@@ -287,7 +283,6 @@ export default function AdminUsersPage() {
                 <tr key={user.id}>
                   <td>#{user.id}</td>
                   <td>
-                    {/* Cột Username có Avatar và Clickable */}
                     <div className={styles["user-info-cell"]}>
                       <img 
                         src={user.avatar || "/default-avatar.png"} 
@@ -315,7 +310,6 @@ export default function AdminUsersPage() {
                   <td>{user.lastLogin}</td>
                   <td>
                     <div className={styles["action-buttons"]}>
-                      {/* Nút View Profile Nhanh */}
                       <button 
                         className={styles["btn-icon"]}
                         onClick={() => handleViewProfile(user)}
@@ -344,10 +338,8 @@ export default function AdminUsersPage() {
             </tbody>
           </table>
         </div>
-
       </main>
 
-      {/* --- MODAL 1: VIEW PROFILE --- */}
       {isProfileModalOpen && viewUser && (
         <div className={styles["modal-overlay"]}>
           <div className={styles["modal"]}>
@@ -394,7 +386,7 @@ export default function AdminUsersPage() {
                 className={`${styles["btn-modal"]} ${styles["btn-save"]}`}
                 onClick={() => {
                   setIsProfileModalOpen(false);
-                  handleEditUser(viewUser); // Chuyển sang chế độ Edit từ View
+                  handleEditUser(viewUser);
                 }}
               >
                 <Edit size={14} style={{marginRight: 5}}/> EDIT PROFILE
@@ -404,7 +396,6 @@ export default function AdminUsersPage() {
         </div>
       )}
 
-      {/* --- MODAL 2: EDIT / CREATE USER --- */}
       {isModalOpen && (
         <div className={styles["modal-overlay"]}>
           <div className={styles["modal"]}>
@@ -458,7 +449,6 @@ export default function AdminUsersPage() {
                 </div>
               </div>
 
-              {/* Phần Đổi Mật Khẩu */}
               <div className={styles["form-group"]} style={{marginTop: '10px', borderTop: '1px dashed #333', paddingTop: '15px'}}>
                 <label className={styles["form-label"]} style={{color: '#fff', display:'flex', alignItems:'center', gap:'5px'}}>
                   <Key size={12} /> 
@@ -492,7 +482,6 @@ export default function AdminUsersPage() {
           </div>
         </div>
       )}
-
     </div>
   );
 }

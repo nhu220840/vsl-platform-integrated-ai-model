@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react"; // 1. Thêm useEffect
 import Link from "next/link";
-import { usePathname } from "next/navigation"; // 1. Import hook lấy đường dẫn
+import { usePathname } from "next/navigation";
 import { 
   Terminal, 
   LayoutDashboard, 
@@ -17,11 +17,11 @@ import {
   Trash2, 
   Video, 
   X, 
-  Save
+  Save,
+  User // 2. Thêm icon User
 } from "lucide-react";
 import styles from "../../../styles/admin-dictionary.module.css";
 
-// Interface Dictionary
 interface DictionaryItem {
   id: number;
   word: string;
@@ -34,17 +34,31 @@ interface DictionaryItem {
 }
 
 export default function AdminDictionaryPage() {
-  const pathname = usePathname(); // 2. Lấy đường dẫn hiện tại
+  const pathname = usePathname();
 
-  // 3. Cấu hình Menu Sidebar
+  // 3. Logic đồng hồ và Admin Name
+  const [currentDateTime, setCurrentDateTime] = useState<string>("");
+  const adminName = "SHERRY";
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('en-GB'); 
+      const timeStr = now.toLocaleTimeString('en-GB');
+      setCurrentDateTime(`${dateStr} - ${timeStr}`);
+    };
+    updateTime();
+    const timer = setInterval(updateTime, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   const menuItems = [
     { label: "[DASHBOARD]", href: "/admin", icon: LayoutDashboard },
-    { label: "[USER_MANAGER]", href: "/admin/users", icon: Users },
+    { label: "[USER_MANAGEMENT]", href: "/admin/users", icon: Users },
     { label: "[CONTRIBUTIONS]", href: "/admin/contributions", icon: FileText },
     { label: "[DICTIONARY_DB]", href: "/admin/dictionary", icon: BookOpen },
   ];
 
-  // --- LOGIC DICTIONARY (Data & State) ---
   const [words, setWords] = useState<DictionaryItem[]>([
     {
       id: 1,
@@ -83,12 +97,10 @@ export default function AdminDictionaryPage() {
   const [currentWord, setCurrentWord] = useState<Partial<DictionaryItem>>({});
   const [isEditMode, setIsEditMode] = useState(false);
 
-  // Filter
   const filteredWords = words.filter((item) =>
     item.word.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Handlers
   const handleAddNew = () => {
     setCurrentWord({});
     setIsEditMode(false);
@@ -113,22 +125,25 @@ export default function AdminDictionaryPage() {
   };
 
   return (
-      <div className={styles["admin-container"]}>
-      {/* --- Top Status Bar --- */}
+    <div className={styles["admin-container"]}>
+      
+      {/* 4. STATUS BAR MỚI */}
       <div className={styles["status-bar"]}>
-        <span className={styles["status-text"]}>
-          <span className="flex items-center gap-2">
-             <Terminal size={14} /> SYSTEM: DICTIONARY_DATABASE | ACCESS: GRANTED
-          </span>
-        </span>
-        <div className={styles["status-indicator"]}>
-          <span className={styles["indicator-dot"]}></span>
-          <span>ONLINE</span>
+        <div className={styles["status-bar-left"]}>
+            <div className={styles["status-item"]}>
+                <span className={styles["status-indicator"]}></span>
+                <span>SYSTEM: ONLINE</span>
+            </div>
+            <div className={styles["status-item"]}>
+                <User size={14} />
+                <span style={{textTransform: 'uppercase'}}>ADMIN: {adminName}</span>
+            </div>
+        </div>
+        <div className={styles["status-item"]}>
+            <span>{currentDateTime}</span>
         </div>
       </div>
 
-
-      {/* --- SIDEBAR (Dynamic Logic) --- */}
       <aside className={styles.sidebar}>
         <div className={styles["sidebar-header"]}>
            <div className="flex items-center gap-2">
@@ -138,7 +153,6 @@ export default function AdminDictionaryPage() {
         </div>
         
         <ul className={styles["sidebar-menu"]}>
-          {/* 4. Render Menu tự động */}
           {menuItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
@@ -155,7 +169,6 @@ export default function AdminDictionaryPage() {
               </li>
             );
           })}
-
           <li>
             <div className={styles["menu-item"]} style={{cursor: 'pointer'}}>
                <span className={styles["icon-wrapper"]}><LogOut size={16}/></span>
@@ -165,10 +178,7 @@ export default function AdminDictionaryPage() {
         </ul>
       </aside>
 
-      {/* --- MAIN CONTENT --- */}
       <main className={styles["main-content"]}>
-        
-        {/* Header: Title & Search */}
         <div className={styles["page-header"]}>
           <div className={styles["page-title"]}>
             <BookOpen size={24} />
@@ -189,7 +199,6 @@ export default function AdminDictionaryPage() {
           </div>
         </div>
 
-        {/* Data Table */}
         <div className={styles["table-container"]}>
           <table className={styles["data-table"]}>
             <thead>
@@ -249,10 +258,8 @@ export default function AdminDictionaryPage() {
             </tbody>
           </table>
         </div>
-
       </main>
 
-      {/* Modal Popup */}
       {isModalOpen && (
         <div className={styles["modal-overlay"]}>
           <div className={styles["modal"]}>
@@ -274,7 +281,6 @@ export default function AdminDictionaryPage() {
                   defaultValue={currentWord.word}
                 />
               </div>
-              
               <div className={styles["form-group"]}>
                 <label className={styles["form-label"]}>CATEGORY</label>
                 <select className={styles["form-select"]} defaultValue={currentWord.category}>
@@ -284,7 +290,6 @@ export default function AdminDictionaryPage() {
                   <option>Travel</option>
                 </select>
               </div>
-
               <div className={styles["form-group"]}>
                 <label className={styles["form-label"]}>DIFFICULTY</label>
                 <select className={styles["form-select"]} defaultValue={currentWord.difficulty}>
@@ -293,7 +298,6 @@ export default function AdminDictionaryPage() {
                   <option>Hard</option>
                 </select>
               </div>
-
               <div className={styles["form-group"]}>
                 <label className={styles["form-label"]}>VIDEO URL (YOUTUBE)</label>
                 <input 
@@ -303,7 +307,6 @@ export default function AdminDictionaryPage() {
                   placeholder="https://..."
                 />
               </div>
-
               <div className={styles["form-group"]}>
                 <label className={styles["form-label"]}>DEFINITION</label>
                 <textarea 

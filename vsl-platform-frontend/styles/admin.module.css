@@ -10,7 +10,7 @@
   overflow-x: hidden;
 }
 
-/* --- STATUS BAR --- */
+/* --- STATUS BAR (STANDARD TEMPLATE) --- */
 .status-bar {
   position: fixed;
   top: 0;
@@ -20,7 +20,7 @@
   background-color: #0a0a0a;
   border-bottom: 1px solid #00ff41;
   display: flex;
-  justify-content: space-between; /* Chia đều 2 bên */
+  justify-content: space-between; /* Căn đều 2 bên trái phải */
   align-items: center;
   padding: 0 20px;
   font-size: 11px;
@@ -32,7 +32,7 @@
 .status-bar-left {
   display: flex;
   align-items: center;
-  gap: 30px;
+  gap: 30px; /* Khoảng cách giữa các item bên trái */
 }
 
 .status-item {

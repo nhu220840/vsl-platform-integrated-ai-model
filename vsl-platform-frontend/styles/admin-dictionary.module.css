@@ -83,7 +83,7 @@
   background: linear-gradient(135deg, #050505 0%, #0a0a0a 100%);
 }
 
-/* Status Bar */
+/* --- STATUS BAR (STANDARD TEMPLATE) --- */
 .status-bar {
   position: fixed;
   top: 0;
@@ -93,32 +93,35 @@
   background-color: #0a0a0a;
   border-bottom: 1px solid #00ff41;
   display: flex;
+  justify-content: space-between; /* Căn đều 2 bên trái phải */
   align-items: center;
   padding: 0 20px;
-  font-size: 12px;
+  font-size: 11px;
   z-index: 1000;
   box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+  letter-spacing: 1px;
 }
 
-.status-text {
-  font-size: 11px;
-  letter-spacing: 2px;
+.status-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 30px; /* Khoảng cách giữa các item bên trái */
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .status-indicator {
-  margin-left: auto;
-  display: flex;
-  gap: 15px;
-  align-items: center;
-}
-
-.indicator-dot {
   width: 8px;
   height: 8px;
   background-color: #00ff41;
   border-radius: 50%;
   box-shadow: 0 0 10px #00ff41;
   animation: pulse 1s infinite;
+  display: inline-block;
 }
 
 @keyframes pulse {

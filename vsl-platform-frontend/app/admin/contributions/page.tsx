@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react"; // 1. Thêm useEffect
 import Link from "next/link";
-import { usePathname } from "next/navigation"; // 1. Import Hook lấy đường dẫn
+import { usePathname } from "next/navigation";
 import { 
   Terminal, 
   LayoutDashboard, 
@@ -12,7 +12,8 @@ import {
   LogOut, 
   Lock,
   CheckCircle,
-  XCircle
+  XCircle,
+  User // 2. Thêm icon User
 } from "lucide-react";
 import styles from "../../../styles/admin-contributions.module.css";
 
@@ -29,12 +30,28 @@ interface Contribution {
 }
 
 export default function AdminContributionsPage() {
-  const pathname = usePathname(); // 2. Lấy đường dẫn hiện tại (ví dụ: /admin/contributions)
+  const pathname = usePathname();
+  
+  // 3. Logic đồng hồ và tên Admin
+  const [currentDateTime, setCurrentDateTime] = useState<string>("");
+  const adminName = "SHERRY";
 
-  // 3. Định nghĩa danh sách Menu để dễ quản lý
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('en-GB'); 
+      const timeStr = now.toLocaleTimeString('en-GB');
+      setCurrentDateTime(`${dateStr} - ${timeStr}`);
+    };
+    updateTime();
+    const timer = setInterval(updateTime, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Menu Config
   const menuItems = [
     { label: "[DASHBOARD]", href: "/admin", icon: LayoutDashboard },
-    { label: "[USER_MANAGER]", href: "/admin/users", icon: Users },
+    { label: "[USER_MANAGEMENT]", href: "/admin/users", icon: Users },
     { label: "[CONTRIBUTIONS]", href: "/admin/contributions", icon: FileText },
     { label: "[DICTIONARY_DB]", href: "/admin/dictionary", icon: BookOpen },
   ];
@@ -87,20 +104,24 @@ export default function AdminContributionsPage() {
 
   return (
     <div className={styles["admin-container"]}>
-      {/* --- Top Status Bar --- */}
+      
+      {/* 4. STATUS BAR MỚI */}
       <div className={styles["status-bar"]}>
-        <span className={styles["status-text"]}>
-          <span className="flex items-center gap-2">
-             <Terminal size={14} /> SYSTEM: REVIEW_MODE_ACTIVE | MODULE: CONTRIBUTIONS
-          </span>
-        </span>
-        <div className={styles["status-indicator"]}>
-          <span className={styles["indicator-dot"]}></span>
-          <span>ONLINE</span>
+        <div className={styles["status-bar-left"]}>
+            <div className={styles["status-item"]}>
+                <span className={styles["status-indicator"]}></span>
+                <span>SYSTEM: ONLINE</span>
+            </div>
+            <div className={styles["status-item"]}>
+                <User size={14} />
+                <span style={{textTransform: 'uppercase'}}>ADMIN: {adminName}</span>
+            </div>
+        </div>
+        <div className={styles["status-item"]}>
+            <span>{currentDateTime}</span>
         </div>
       </div>
 
-      {/* --- Sidebar (Dynamic Logic) --- */}
       <aside className={styles.sidebar}>
         <div className={styles["sidebar-header"]}>
            <div className="flex items-center gap-2">
@@ -110,9 +131,8 @@ export default function AdminContributionsPage() {
         </div>
         
         <ul className={styles["sidebar-menu"]}>
-          {/* 4. Render Menu tự động */}
           {menuItems.map((item) => {
-            const isActive = pathname === item.href; // Kiểm tra xem có đang ở trang này không
+            const isActive = pathname === item.href;
             const Icon = item.icon;
             
             return (
@@ -127,8 +147,6 @@ export default function AdminContributionsPage() {
               </li>
             );
           })}
-
-          {/* Nút Logout để riêng */}
           <li>
             <div className={styles["menu-item"]} style={{cursor: 'pointer'}}>
                <span className={styles["icon-wrapper"]}><LogOut size={16}/></span>
@@ -138,7 +156,6 @@ export default function AdminContributionsPage() {
         </ul>
       </aside>
 
-      {/* --- Main Content --- */}
       <main className={styles["main-content"]}>
         <h1 className={styles["page-title"]}>{">"} PENDING_REQUESTS</h1>
 
@@ -147,8 +164,6 @@ export default function AdminContributionsPage() {
             {contributions.map((contrib) => (
               <div key={contrib.id} className={styles["review-card"]}>
                 <div className={styles["review-card-content"]}>
-                  
-                  {/* Column 1: Info */}
                   <div className={styles["card-info"]}>
                     <div className={styles["card-word"]}>{contrib.word}</div>
                     <div className={styles["card-submitted"]}>
@@ -162,8 +177,6 @@ export default function AdminContributionsPage() {
                       </div>
                     </div>
                   </div>
-
-                  {/* Column 2: Video */}
                   <div className={styles["video-preview"]}>
                     <iframe 
                         src={contrib.videoUrl} 
@@ -171,8 +184,6 @@ export default function AdminContributionsPage() {
                         allowFullScreen 
                     />
                   </div>
-
-                  {/* Column 3: Actions */}
                   <div className={styles["card-actions"]}>
                     <button 
                         className={`${styles["btn"]} ${styles["btn-approve"]}`}
