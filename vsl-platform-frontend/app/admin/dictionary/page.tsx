@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation"; // 1. Import hook lấy đường dẫn
 import { 
   Terminal, 
   LayoutDashboard, 
@@ -9,16 +10,14 @@ import {
   FileText, 
   BookOpen, 
   LogOut, 
-  Lock, // Icon ổ khóa cho Sidebar
+  Lock, 
   Search, 
   Plus, 
   Edit, 
   Trash2, 
   Video, 
   X, 
-  Save,
-  TrendingUp, 
-  Upload, 
+  Save
 } from "lucide-react";
 import styles from "../../../styles/admin-dictionary.module.css";
 
@@ -35,6 +34,16 @@ interface DictionaryItem {
 }
 
 export default function AdminDictionaryPage() {
+  const pathname = usePathname(); // 2. Lấy đường dẫn hiện tại
+
+  // 3. Cấu hình Menu Sidebar
+  const menuItems = [
+    { label: "[DASHBOARD]", href: "/admin", icon: LayoutDashboard },
+    { label: "[USER_MANAGER]", href: "/admin/users", icon: Users },
+    { label: "[CONTRIBUTIONS]", href: "/admin/contributions", icon: FileText },
+    { label: "[DICTIONARY_DB]", href: "/admin/dictionary", icon: BookOpen },
+  ];
+
   // --- LOGIC DICTIONARY (Data & State) ---
   const [words, setWords] = useState<DictionaryItem[]>([
     {
@@ -104,8 +113,8 @@ export default function AdminDictionaryPage() {
   };
 
   return (
-    <div className={styles["admin-container"]}>
-      {/* --- TOP STATUS BAR (Local) --- */}
+      <div className={styles["admin-container"]}>
+      {/* --- Top Status Bar --- */}
       <div className={styles["status-bar"]}>
         <span className={styles["status-text"]}>
           <span className="flex items-center gap-2">
@@ -118,8 +127,9 @@ export default function AdminDictionaryPage() {
         </div>
       </div>
 
-     {/* --- Sidebar --- */}
-     <aside className={styles.sidebar}>
+
+      {/* --- SIDEBAR (Dynamic Logic) --- */}
+      <aside className={styles.sidebar}>
         <div className={styles["sidebar-header"]}>
            <div className="flex items-center gap-2">
              <Lock size={16}/> VSL_ADMIN
@@ -128,32 +138,26 @@ export default function AdminDictionaryPage() {
         </div>
         
         <ul className={styles["sidebar-menu"]}>
+          {/* 4. Render Menu tự động */}
+          {menuItems.map((item) => {
+            const isActive = pathname === item.href;
+            const Icon = item.icon;
+            
+            return (
+              <li key={item.href}>
+                <Link 
+                  href={item.href} 
+                  className={`${styles["menu-item"]} ${isActive ? styles["menu-item-active"] : ""}`}
+                >
+                  <span className={styles["icon-wrapper"]}><Icon size={16}/></span>
+                  <span>{item.label}</span>
+                </Link>
+              </li>
+            );
+          })}
+
           <li>
-            <Link href="/admin" className={styles["menu-item"]}>
-              <span className={styles["icon-wrapper"]}><TrendingUp size={16}/></span>
-              <span>[DASHBOARD]</span>
-            </Link>
-          </li>
-          <li>
-            <Link href="/admin/users" className={styles["menu-item"]}>
-              <span className={styles["icon-wrapper"]}><Users size={16}/></span>
-              <span>[USER_MANAGER]</span>
-            </Link>
-          </li>
-          <li>
-            <div className={`${styles["menu-item"]} ${styles["menu-item-active"]}`}>
-              <span className={styles["icon-wrapper"]}><Upload size={16}/></span>
-              <span>[CONTRIBUTIONS]</span>
-            </div>
-          </li>
-          <li>
-            <Link href="/admin/dictionary" className={styles["menu-item"]}>
-               <span className={styles["icon-wrapper"]}><BookOpen size={16}/></span>
-               <span>[DICTIONARY_DB]</span>
-            </Link>
-          </li>
-          <li>
-            <div className={styles["menu-item"]}>
+            <div className={styles["menu-item"]} style={{cursor: 'pointer'}}>
                <span className={styles["icon-wrapper"]}><LogOut size={16}/></span>
                <span>[LOGOUT]</span>
             </div>
@@ -161,8 +165,7 @@ export default function AdminDictionaryPage() {
         </ul>
       </aside>
 
-
-      {/* --- MAIN CONTENT (Dictionary Logic) --- */}
+      {/* --- MAIN CONTENT --- */}
       <main className={styles["main-content"]}>
         
         {/* Header: Title & Search */}
@@ -249,7 +252,7 @@ export default function AdminDictionaryPage() {
 
       </main>
 
-      {/* Modal Popup (Dictionary Logic) */}
+      {/* Modal Popup */}
       {isModalOpen && (
         <div className={styles["modal-overlay"]}>
           <div className={styles["modal"]}>

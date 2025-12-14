@@ -2,14 +2,17 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation"; // 1. Import Hook lấy đường dẫn
 import { 
   Terminal, 
-  Lock,
-  TrendingUp, 
+  LayoutDashboard, 
   Users, 
-  Upload, 
+  FileText, 
   BookOpen, 
   LogOut, 
+  Lock,
+  CheckCircle,
+  XCircle
 } from "lucide-react";
 import styles from "../../../styles/admin-contributions.module.css";
 
@@ -26,6 +29,16 @@ interface Contribution {
 }
 
 export default function AdminContributionsPage() {
+  const pathname = usePathname(); // 2. Lấy đường dẫn hiện tại (ví dụ: /admin/contributions)
+
+  // 3. Định nghĩa danh sách Menu để dễ quản lý
+  const menuItems = [
+    { label: "[DASHBOARD]", href: "/admin", icon: LayoutDashboard },
+    { label: "[USER_MANAGER]", href: "/admin/users", icon: Users },
+    { label: "[CONTRIBUTIONS]", href: "/admin/contributions", icon: FileText },
+    { label: "[DICTIONARY_DB]", href: "/admin/dictionary", icon: BookOpen },
+  ];
+
   const [contributions, setContributions] = useState<Contribution[]>([
     {
       id: 1,
@@ -63,13 +76,11 @@ export default function AdminContributionsPage() {
   ]);
 
   const handleApprove = (id: number) => {
-    console.log(`[v0] Approving contribution: ${id}`);
     alert(`Contribution #${id} approved!`);
     setContributions((prev) => prev.filter((item) => item.id !== id));
   };
 
   const handleReject = (id: number) => {
-    console.log(`[v0] Rejecting contribution: ${id}`);
     alert(`Contribution #${id} rejected!`);
     setContributions((prev) => prev.filter((item) => item.id !== id));
   };
@@ -89,7 +100,7 @@ export default function AdminContributionsPage() {
         </div>
       </div>
 
-      {/* --- Sidebar --- */}
+      {/* --- Sidebar (Dynamic Logic) --- */}
       <aside className={styles.sidebar}>
         <div className={styles["sidebar-header"]}>
            <div className="flex items-center gap-2">
@@ -99,32 +110,27 @@ export default function AdminContributionsPage() {
         </div>
         
         <ul className={styles["sidebar-menu"]}>
+          {/* 4. Render Menu tự động */}
+          {menuItems.map((item) => {
+            const isActive = pathname === item.href; // Kiểm tra xem có đang ở trang này không
+            const Icon = item.icon;
+            
+            return (
+              <li key={item.href}>
+                <Link 
+                  href={item.href} 
+                  className={`${styles["menu-item"]} ${isActive ? styles["menu-item-active"] : ""}`}
+                >
+                  <span className={styles["icon-wrapper"]}><Icon size={16}/></span>
+                  <span>{item.label}</span>
+                </Link>
+              </li>
+            );
+          })}
+
+          {/* Nút Logout để riêng */}
           <li>
-            <Link href="/admin" className={styles["menu-item"]}>
-              <span className={styles["icon-wrapper"]}><TrendingUp size={16}/></span>
-              <span>[DASHBOARD]</span>
-            </Link>
-          </li>
-          <li>
-            <Link href="/admin/users" className={styles["menu-item"]}>
-              <span className={styles["icon-wrapper"]}><Users size={16}/></span>
-              <span>[USER_MANAGER]</span>
-            </Link>
-          </li>
-          <li>
-            <div className={`${styles["menu-item"]} ${styles["menu-item-active"]}`}>
-              <span className={styles["icon-wrapper"]}><Upload size={16}/></span>
-              <span>[CONTRIBUTIONS]</span>
-            </div>
-          </li>
-          <li>
-            <Link href="/admin/dictionary" className={styles["menu-item"]}>
-               <span className={styles["icon-wrapper"]}><BookOpen size={16}/></span>
-               <span>[DICTIONARY_DB]</span>
-            </Link>
-          </li>
-          <li>
-            <div className={styles["menu-item"]}>
+            <div className={styles["menu-item"]} style={{cursor: 'pointer'}}>
                <span className={styles["icon-wrapper"]}><LogOut size={16}/></span>
                <span>[LOGOUT]</span>
             </div>
@@ -142,7 +148,7 @@ export default function AdminContributionsPage() {
               <div key={contrib.id} className={styles["review-card"]}>
                 <div className={styles["review-card-content"]}>
                   
-                  {/* Cột 1: Thông tin từ */}
+                  {/* Column 1: Info */}
                   <div className={styles["card-info"]}>
                     <div className={styles["card-word"]}>{contrib.word}</div>
                     <div className={styles["card-submitted"]}>
@@ -157,7 +163,7 @@ export default function AdminContributionsPage() {
                     </div>
                   </div>
 
-                  {/* Cột 2: Video Preview */}
+                  {/* Column 2: Video */}
                   <div className={styles["video-preview"]}>
                     <iframe 
                         src={contrib.videoUrl} 
@@ -166,19 +172,23 @@ export default function AdminContributionsPage() {
                     />
                   </div>
 
-                  {/* Cột 3: Actions (Đã bỏ icon) */}
+                  {/* Column 3: Actions */}
                   <div className={styles["card-actions"]}>
                     <button 
                         className={`${styles["btn"]} ${styles["btn-approve"]}`}
                         onClick={() => handleApprove(contrib.id)}
                     >
-                       APPROVE
+                       <span className="flex items-center justify-center gap-2">
+                         APPROVE
+                       </span>
                     </button>
                     <button 
                         className={`${styles["btn"]} ${styles["btn-reject"]}`}
                         onClick={() => handleReject(contrib.id)}
                     >
-                        REJECT
+                        <span className="flex items-center justify-center gap-2">
+                            REJECT
+                        </span>
                     </button>
                   </div>
                 </div>
@@ -186,10 +196,9 @@ export default function AdminContributionsPage() {
             ))}
           </div>
         ) : (
-          /* Empty State */
           <div className={styles["empty-state"]}>
              <div className={styles["empty-state-icon"]}>
-                <Terminal size={64} />
+                <CheckCircle size={64} />
              </div>
              <div>{">"} SYSTEM: ALL_DATA_PROCESSED. QUEUE_EMPTY.</div>
           </div>
