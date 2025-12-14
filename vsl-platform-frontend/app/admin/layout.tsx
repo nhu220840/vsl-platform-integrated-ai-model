@@ -23,21 +23,30 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { isLoggedIn, userRole, username } = useAuthStatus();
+  // nhớ bỏ cmt sau khi test xong
+  // const { isLoggedIn, userRole, username } = useAuthStatus();
+
+  // 2. THÊM ĐOẠN FAKE STATUS NÀY VÀO: (nhớ xóa)
+  const isLoggedIn = true;     // Giả vờ đã đăng nhập
+  const userRole = "ADMIN";    // Giả vờ là Admin
+  const username = "DevMode";  // Tên hiển thị giả
+
   const logout = useAuthStore((state) => state.logout);
 
   useEffect(() => {
     // Redirect to login if not authenticated
-    if (!isLoggedIn) {
-      router.replace("/login");
-      return;
-    }
+    
+    // nhớ bỏ cmt sau khi test xong
+    // if (!isLoggedIn) {
+    //   router.replace("/login");
+    //   return;
+    // }
 
-    // Redirect to home if not admin
-    if (userRole !== "ADMIN") {
-      router.replace("/");
-      return;
-    }
+    // // Redirect to home if not admin
+    // if (userRole !== "ADMIN") {
+    //   router.replace("/");
+    //   return;
+    // }
   }, [isLoggedIn, userRole, router]);
 
   const menuItems = [
