@@ -182,7 +182,7 @@ export default function AdminDictionaryPage() {
         <div className={styles["page-header"]}>
           <div className={styles["page-title"]}>
             <BookOpen size={24} />
-            DICTIONARY_DATABASE
+            DICTIONARY DATABASE
           </div>
           
           <div className={styles["search-container"]}>

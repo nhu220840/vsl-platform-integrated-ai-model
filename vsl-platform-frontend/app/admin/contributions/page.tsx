@@ -157,7 +157,7 @@ export default function AdminContributionsPage() {
       </aside>
 
       <main className={styles["main-content"]}>
-        <h1 className={styles["page-title"]}>{">"} PENDING_REQUESTS</h1>
+        <h1 className={styles["page-title"]}>{">"} PENDING REQUESTS</h1>
 
         {contributions.length > 0 ? (
           <div className={styles["review-list"]}>

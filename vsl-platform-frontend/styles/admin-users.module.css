@@ -425,6 +425,162 @@
 }
 
 /* NEW: Profile specific styles in modal */
+/* ... Giữ nguyên các phần CSS cũ của Admin Container, Sidebar, Table ... */
+
+/* --- DOSSIER MODAL STYLES (Giao diện Hồ sơ chi tiết) --- */
+.dossier-modal {
+  background-color: #050505;
+  border: 1px solid #00ff41;
+  box-shadow: 0 0 40px rgba(0, 255, 65, 0.1);
+  width: 700px; /* Rộng hơn để chứa 2 cột */
+  max-width: 95%;
+  position: relative;
+  overflow: hidden;
+  animation: modalSlideIn 0.3s ease;
+}
+
+/* Hiệu ứng quét ngang trên hồ sơ */
+.dossier-modal::after {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  z-index: 2;
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none;
+}
+
+.dossier-header {
+  background-color: rgba(0, 255, 65, 0.1);
+  padding: 15px 25px;
+  border-bottom: 1px solid #00ff41;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dossier-title {
+  font-size: 16px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dossier-body {
+  padding: 25px;
+  display: flex;
+  gap: 30px;
+}
+
+/* Cột trái: Ảnh & Role */
+.dossier-left {
+  flex: 0 0 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-right: 1px dashed #333;
+  padding-right: 20px;
+}
+
+.dossier-avatar-frame {
+  width: 140px;
+  height: 140px;
+  border: 2px solid #00ff41;
+  padding: 5px;
+  margin-bottom: 15px;
+  position: relative;
+}
+
+.dossier-avatar-frame::before {
+  content: '';
+  position: absolute;
+  top: -2px; left: -2px; right: -2px; bottom: -2px;
+  border: 1px solid transparent;
+  border-top-color: #00ff41;
+  border-bottom-color: #00ff41;
+  animation: scan 2s infinite linear;
+}
+
+.dossier-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background-color: #000;
+}
+
+.dossier-role-stamp {
+  margin-top: 10px;
+  padding: 5px 15px;
+  border: 2px solid;
+  font-weight: bold;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transform: rotate(-5deg); /* Nghiêng nhẹ giống đóng dấu */
+  font-size: 14px;
+}
+
+.stamp-admin { color: #ff0055; border-color: #ff0055; text-shadow: 0 0 5px #ff0055; }
+.stamp-user { color: #00ff41; border-color: #00ff41; text-shadow: 0 0 5px #00ff41; }
+
+/* Cột phải: Thông tin */
+.dossier-right {
+  flex: 1;
+}
+
+.dossier-section {
+  margin-bottom: 20px;
+}
+
+.dossier-section-title {
+  font-size: 10px;
+  color: #00ff41;
+  border-bottom: 1px solid #333;
+  margin-bottom: 10px;
+  padding-bottom: 2px;
+  letter-spacing: 1px;
+}
+
+.dossier-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.dossier-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.dossier-label {
+  font-size: 10px;
+  color: #666;
+  margin-bottom: 2px;
+  letter-spacing: 1px;
+}
+
+.dossier-value {
+  font-size: 13px;
+  color: #fff;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+.dossier-footer {
+  background-color: rgba(0, 0, 0, 0.5);
+  border-top: 1px solid #333;
+  padding: 15px 25px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .profile-view-header {
   display: flex;
   flex-direction: column;
