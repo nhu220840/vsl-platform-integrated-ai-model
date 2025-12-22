@@ -37,7 +37,7 @@ public class RecognitionController {
      * @param input Gesture input with landmarks and current text context (validated)
      * @return Recognized Vietnamese text with accents
      */
-    @PostMapping("/recognize")
+    @PostMapping("/predict")
     public ResponseEntity<ApiResponse<String>> recognize(@Valid @RequestBody GestureInputDTO input) {
         var startTime = System.currentTimeMillis();
         

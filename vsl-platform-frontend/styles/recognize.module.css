@@ -100,36 +100,40 @@
   border-right: 2px solid var(--border-color);
   background-color: #000;
   overflow: hidden;
+  /* Thêm dòng này để đảm bảo container có không gian */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .video-feed {
+  position: absolute; /* Đổi thành absolute để full khung */
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  opacity: 0.9;
-  /* Đảm bảo video và canvas chồng lên nhau chuẩn */
-  position: relative; 
+  z-index: 10; /* Đặt thấp hơn overlay (20) nhưng cao hơn background */
 }
 
-/* CSS cho video và canvas thực tế từ React logic */
 .input-video {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: cover; /* Đảm bảo video phủ kín khung */
   position: absolute;
   top: 0;
   left: 0;
-  transform: scaleX(-1); /* Lật gương video */
+  transform: scaleX(-1);
 }
 
 .output-canvas {
   width: 100%;
   height: 100%;
+  object-fit: cover;
   position: absolute;
   top: 0;
   left: 0;
-  transform: scaleX(-1); /* Lật gương canvas khớp video */
-  z-index: 10;
+  transform: scaleX(-1);
+  z-index: 11; /* Canvas vẽ tay phải nằm trên video */
 }
 
 /* Overlays */
