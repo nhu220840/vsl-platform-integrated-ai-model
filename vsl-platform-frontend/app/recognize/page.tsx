@@ -9,6 +9,7 @@ import { recognitionApi } from "@/lib/api-client"; // Import API
 // CẤU HÌNH NHẬN DIỆN
 const RECOGNITION_BATCH_SIZE = 20; // Số frame cần để model AI hiểu (khớp với lúc train model)
 const CONFIDENCE_THRESHOLD = 0.70; // Chỉ hiện kết quả nếu độ tin cậy > 70%
+const HOLD_REQUIRED_BATCHES = 2; // Cần hold 2 batches (3s) = giữ gesture 2 lần liên tiếp để add character
 
 export default function GestureRecognitionPage() {
   // 1. Hook MediaPipe
@@ -30,6 +31,11 @@ export default function GestureRecognitionPage() {
   const [historyLog, setHistoryLog] = useState<string[]>([]); // Lưu lịch sử nhận diện
   const [outputText, setOutputText] = useState(""); // Lưu văn bản đầu ra để user có thể xóa
   const [fixedText, setFixedText] = useState(""); // Kết quả sau khi fix diacritics
+
+  // State cho hold logic (ngăn duplicate character)
+  const lastPredictionRef = useRef<string | null>(null);
+  const holdCountRef = useRef(0);
+  const gestureChangedRef = useRef(false); // Flag để track khi gesture mới thay đổi
 
   // State thống kê (cho đẹp giao diện)
   const [totalGestures, setTotalGestures] = useState(0);
@@ -68,22 +74,55 @@ export default function GestureRecognitionPage() {
           // Xử lý kết quả trả về
           if (response && response.predictedWord) {
             const letter = response.predictedWord.toUpperCase();
+            const conf = response.confidence || 0.85;
             
             setCurrentResult(letter);
-            setConfidence(response.confidence || 0.85);
+            setConfidence(conf);
             setTotalGestures(prev => prev + 1);
             
-            // Thêm vào output text nếu confidence cao
-            if ((response.confidence || 0.85) >= CONFIDENCE_THRESHOLD) {
-              setOutputText(prev => prev + letter);
-              console.log(`[OUTPUT] Added: ${letter}, Total: ${outputText + letter}`);
+            // === HOLD LOGIC: Ngăn duplicate character ===
+            if (conf >= CONFIDENCE_THRESHOLD) {
+              if (letter === lastPredictionRef.current && !gestureChangedRef.current) {
+                // Cùng gesture như lần trước (và gesture không vừa thay đổi)
+                holdCountRef.current++;
+                console.log(`[HOLD] ${letter} (${holdCountRef.current}/${HOLD_REQUIRED_BATCHES})`);
+                
+                if (holdCountRef.current >= HOLD_REQUIRED_BATCHES) {
+                  // Đã giữ đủ lâu → thêm character
+                  setOutputText(prev => prev + letter);
+                  console.log(`[✓ ADDED] Character '${letter}' after holding ${HOLD_REQUIRED_BATCHES} batches`);
+                  setHistoryLog(prev => [`[${new Date().toLocaleTimeString()}] ✓ ADDED: ${letter}`, ...prev.slice(0, 9)]);
+                  
+                  // Reset hold state HOÀN TOÀN
+                  lastPredictionRef.current = null;
+                  holdCountRef.current = 0;
+                  gestureChangedRef.current = false;
+                }
+              } else if (letter === lastPredictionRef.current && gestureChangedRef.current) {
+                // Cùng gesture lần thứ 2 liên tiếp → clear flag và bắt đầu increment
+                gestureChangedRef.current = false;
+                holdCountRef.current++;
+                console.log(`[HOLD] ${letter} (${holdCountRef.current}/${HOLD_REQUIRED_BATCHES}) - flag cleared`);
+              } else if (letter !== lastPredictionRef.current) {
+                // Gesture thay đổi → reset counter
+                if (lastPredictionRef.current) {
+                  console.log(`[RESET] Gesture changed from '${lastPredictionRef.current}' to '${letter}'`);
+                }
+                lastPredictionRef.current = letter;
+                holdCountRef.current = 1;
+                gestureChangedRef.current = true; // ← Mark gesture change
+              }
+              // Nếu cùng gesture nhưng gesture vừa thay đổi → skip (chờ batch tiếp theo)
             }
             
             // Thêm vào log bên phải
-            setHistoryLog(prev => [`[${new Date().toLocaleTimeString()}] DETECTED: ${letter} (${((response.confidence || 0.85) * 100).toFixed(0)}%)`, ...prev.slice(0, 9)]);
+            setHistoryLog(prev => [`[${new Date().toLocaleTimeString()}] DETECTED: ${letter} (${(conf * 100).toFixed(0)}%)`, ...prev.slice(0, 9)]);
           } else {
              console.warn("[Recognition] No result from backend");
              setCurrentResult("...");
+             lastPredictionRef.current = null;
+             holdCountRef.current = 0;
+             gestureChangedRef.current = false;
           }
 
         } catch (error: any) {
@@ -183,23 +222,26 @@ export default function GestureRecognitionPage() {
           </div>
 
           <div className={styles["info-panel"]}>
-            <div className={styles["info-title"]}>📊 BUFFER STATUS</div>
-            <div className={styles["info-subtitle"]}>
-                COLLECTING: {currentBatch.length} / {RECOGNITION_BATCH_SIZE} FRAMES
-                <div style={{
-                    width: '100%', height: '6px', background: '#1a3a1a', marginTop: '8px',
-                    position: 'relative', borderRadius: '3px', overflow: 'hidden'
-                }}>
-                    <div style={{
-                        width: `${(currentBatch.length / RECOGNITION_BATCH_SIZE) * 100}%`,
-                        height: '100%', background: 'linear-gradient(90deg, #00ff00, #00cc00)',
-                        transition: 'width 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-                        boxShadow: '0 0 10px rgba(0, 255, 0, 0.6)'
-                    }}></div>
-                </div>
-                <div style={{ fontSize: '11px', marginTop: '6px', opacity: 0.7, color: '#00ff00' }}>
-                  Status: {currentBatch.length >= RECOGNITION_BATCH_SIZE ? '✓ READY TO PROCESS' : '⏳ BUFFERING...'}
-                </div>
+            <div className={styles["info-title"]}>⏱️ HOLD TIME</div>
+            
+            {/* === HOLD TIME STATUS - MINIMAL === */}
+            <div>
+              <div style={{ fontSize: '12px', marginBottom: '8px', color: '#00ff00' }}>
+                {lastPredictionRef.current 
+                  ? `${lastPredictionRef.current} (${holdCountRef.current}/${HOLD_REQUIRED_BATCHES})`
+                  : "waiting..."}
+              </div>
+              <div style={{
+                  width: '100%', height: '8px', background: '#1a3a1a', 
+                  position: 'relative', borderRadius: '4px', overflow: 'hidden'
+              }}>
+                  <div style={{
+                      width: `${(holdCountRef.current / HOLD_REQUIRED_BATCHES) * 100}%`,
+                      height: '100%', background: holdCountRef.current >= HOLD_REQUIRED_BATCHES ? '#ffaa00' : '#0088ff',
+                      transition: 'width 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                      boxShadow: '0 0 8px rgba(0, 136, 255, 0.8)'
+                  }}></div>
+              </div>
             </div>
           </div>
         </div>
@@ -207,25 +249,70 @@ export default function GestureRecognitionPage() {
         {/* SIDEBAR LOGS */}
         <div className={styles["terminal-sidebar"]}>
           <div className={styles["terminal-header"]}>
-            {">"} SYSTEM_LOGS
+            {">"} TEXT_PANEL
           </div>
           <div className={styles["terminal-content"]}>
-            <div className={styles["log-entry"]}>
-              <strong>&gt; SESSION_INIT</strong><br />
-              Target: Alphabet Recognition
+            {/* === RAW TEXT === */}
+            <div style={{ marginBottom: '15px' }}>
+              <div style={{ color: '#ffaa00', fontWeight: 'bold', fontSize: '11px', marginBottom: '6px' }}>
+                📝 RAW (không dấu):
+              </div>
+              <div style={{
+                  background: '#0a2a0a',
+                  border: '1px solid #ffaa00',
+                  padding: '8px',
+                  borderRadius: '3px',
+                  fontFamily: 'monospace',
+                  fontSize: '12px',
+                  color: '#ffaa00',
+                  wordBreak: 'break-word',
+                  maxHeight: '60px',
+                  overflowY: 'auto',
+                  minHeight: '35px'
+              }}>
+                {outputText || '(trống)'}
+              </div>
             </div>
-            
-            {historyLog.map((log, i) => (
-                <div key={i} className={`${styles["log-entry"]} ${i===0 ? styles["log-entry-active"] : ""}`}>
-                    {log}
-                </div>
-            ))}
-            
-            <div style={{marginTop: '20px', borderTop: '1px dashed #004d00', paddingTop: '10px'}}>
-                <strong>&gt; STATISTICS</strong><br/>
-                Total Detected: {totalGestures}<br/>
-                Model: MLP (Multi-Layer Perceptron)<br/>
-                Status: {isCapturing ? '🟢 Running' : '⚪ Ready'}
+
+            {/* === FIXED TEXT === */}
+            <div style={{ marginBottom: '15px', borderTop: '1px dashed #00aa00', paddingTop: '10px' }}>
+              <div style={{ color: '#00ff00', fontWeight: 'bold', fontSize: '11px', marginBottom: '6px' }}>
+                ✓ FIXED (có dấu):
+              </div>
+              <div style={{
+                  background: '#0a2a0a',
+                  border: '1px solid #00ff00',
+                  padding: '8px',
+                  borderRadius: '3px',
+                  fontFamily: 'monospace',
+                  fontSize: '12px',
+                  color: '#00ff00',
+                  wordBreak: 'break-word',
+                  maxHeight: '60px',
+                  overflowY: 'auto',
+                  minHeight: '35px'
+              }}>
+                {fixedText || '(bấm FIX TEXT)'}
+              </div>
+            </div>
+
+            {/* === DETECTION LOG === */}
+            <div style={{ borderTop: '1px dashed #00aa00', paddingTop: '10px' }}>
+              <div style={{ color: '#00ff00', fontWeight: 'bold', fontSize: '11px', marginBottom: '6px' }}>
+                📋 LOG:
+              </div>
+              {historyLog.map((log, i) => (
+                  <div key={i} className={`${styles["log-entry"]} ${i===0 ? styles["log-entry-active"] : ""}`} 
+                       style={{ fontSize: '11px', lineHeight: '1.3' }}>
+                      {log}
+                  </div>
+              ))}
+            </div>
+
+            <div style={{marginTop: '15px', borderTop: '1px dashed #004d00', paddingTop: '10px', fontSize: '11px'}}>
+                <strong>&gt; STATS</strong><br/>
+                Total: {totalGestures}<br/>
+                Status: {isCapturing ? '🟢 OK' : '⚪ Ready'}
             </div>
           </div>
         </div>

@@ -256,19 +256,11 @@ def predict():
                 'error': 'Failed to determine prediction'
             }), 400
         
-        # Accent restoration logic
-        if raw_char.upper() == "SPACE":
-            # Append space to current text
-            new_text = current_text + " "
-            final_sentence = restore_diacritics(new_text.lower().strip())
-        else:
-            # Append character to current text
-            new_text = current_text + raw_char
-            final_sentence = restore_diacritics(new_text.lower().strip())
-        
+        # Return ONLY the predicted character (not accumulated text)
+        # Frontend will accumulate the characters, not Python
         return jsonify({
             'success': True,
-            'final_sentence': final_sentence,
+            'predicted_word': raw_char,  # ← ONLY the new character/prediction
             'confidence': confidence,
             'raw_char': raw_char,
             'frames_processed': len(frames),
@@ -282,9 +274,68 @@ def predict():
         }), 500
 
 
-# --- INITIALIZATION ---
+@app.route('/fix-diacritics', methods=['POST'])
+def fix_diacritics():
+    """
+    Add Vietnamese diacritics to raw text
+    
+    Request body (JSON):
+    {
+        "text": "xin chao"
+    }
+    
+    Response:
+    {
+        "fixed_text": "xin chào",
+        "success": true
+    }
+    """
+    try:
+        # Validate request
+        if not request.is_json:
+            return jsonify({
+                'success': False,
+                'error': 'Request must be JSON'
+            }), 400
+        
+        data = request.get_json()
+        
+        if 'text' not in data:
+            return jsonify({
+                'success': False,
+                'error': 'Missing "text" in request body'
+            }), 400
+        
+        raw_text = data['text']
+        
+        if not isinstance(raw_text, str):
+            return jsonify({
+                'success': False,
+                'error': '"text" must be a string'
+            }), 400
+        
+        if not raw_text.strip():
+            return jsonify({
+                'success': False,
+                'error': '"text" cannot be empty'
+            }), 400
+        
+        # Restore diacritics
+        fixed_text = restore_diacritics(raw_text.lower().strip())
+        
+        return jsonify({
+            'success': True,
+            'fixed_text': fixed_text,
+            'original_text': raw_text
+        }), 200
+    
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Internal server error: {str(e)}'
+        }), 500
 
-# Load models at startup
+
 try:
     load_models()
     print("✓ API initialized and ready")

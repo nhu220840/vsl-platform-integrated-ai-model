@@ -111,12 +111,16 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/spelling/**").permitAll()
                 .requestMatchers("/api/v1/dictionary/search/**").permitAll()
                 .requestMatchers("/api/v1/dictionary/detail/**").permitAll()
+                .requestMatchers("/api/auth/**").permitAll() // Auth endpoints
+                .requestMatchers("/api/dictionary/**").permitAll() // Dictionary search (public)
                 .requestMatchers("/api/vsl/**").permitAll() // VSL gesture recognition endpoints
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 
                 // --- PRIVATE ENDPOINTS ---
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/user/**").hasAnyRole("USER", "ADMIN")
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN")
                 
                 // --- MẶC ĐỊNH ---
                 .anyRequest().authenticated()
