@@ -7,6 +7,7 @@ import os
 import threading
 import sys
 from PIL import Image, ImageDraw, ImageFont
+from queue import Queue
 
 # --- CẤU HÌNH PATH ---
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -30,8 +31,10 @@ MODEL_PATH = os.path.join(PROJECT_ROOT, 'models', 'model_mlp.pkl')
 
 # --- BIẾN TOÀN CỤC ---
 final_sentence = ""
-is_processing_accent = False
-cached_font_path = None  # Biến để lưu đường dẫn font sau khi tìm thấy
+processing_queue = Queue(maxsize=10)  # Queue cho async processing để giảm lag
+cached_font_path = None
+worker_thread = None
+should_stop = False
 
 # --- [MỚI] HÀM TỰ ĐỘNG TÌM FONT TIẾNG VIỆT ---
 def find_best_font_path():
@@ -112,23 +115,38 @@ def draw_vn_text(img, text, pos, font_size=30, color=(255, 255, 255)):
     return cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
 
 def process_accent_async(raw_text):
-    global final_sentence, is_processing_accent
-    is_processing_accent = True
+    """Async worker: liên tục xử lý từ từ hàng đợi, tự động thêm dấu"""
+    global final_sentence
     try:
-        # Chuẩn hóa input
         raw_text_lower = raw_text.lower().strip()
-        print(f"Adding accents for: {raw_text_lower}")
+        if not raw_text_lower or raw_text_lower == " ":
+            final_sentence = raw_text
+            return
+            
+        print(f"[POST-PROCESSING] Adding accents for: '{raw_text_lower}'")
+        start_time = time.time()
         
         restored = restore_diacritics(raw_text_lower)
+        elapsed = time.time() - start_time
         
-        # Chuẩn hóa output
         final_sentence = restored.capitalize()
+        print(f"[POST-PROCESSING] Done in {elapsed:.3f}s: '{restored}'")
         
     except Exception as e:
-        print(f"Error adding accents: {e}")
-        final_sentence = "Error!"
-    finally:
-        is_processing_accent = False
+        print(f"[ERROR] Accent processing failed: {e}")
+        final_sentence = raw_text
+
+def diacritics_worker():
+    """Thread worker: nhận từ từ queue và xử lý song song"""
+    global should_stop
+    while not should_stop:
+        try:
+            word = processing_queue.get(timeout=1)
+            if word is None:
+                break
+            process_accent_async(word)
+        except:
+            continue
 
 # --- LOAD MODEL ---
 print("Loading Gesture Model and Scaler...")
@@ -139,10 +157,16 @@ if not os.path.exists(SCALER_PATH) or not os.path.exists(MODEL_PATH):
 try:
     scaler = joblib.load(SCALER_PATH)
     model = joblib.load(MODEL_PATH)
-    print("Model loaded successfully!")
+    print("✓ Model loaded successfully!")
 except Exception as e:
     print(f"Error loading model: {e}")
     exit()
+
+# --- KHỞI ĐỘNG WORKER THREAD ---
+print("Starting diacritics worker thread...")
+worker_thread = threading.Thread(target=diacritics_worker, daemon=True)
+worker_thread.start()
+print("✓ Worker thread started")
 
 # --- SETUP MEDIAPIPE ---
 mp_hands = mp.solutions.hands
@@ -214,12 +238,26 @@ while cap.isOpened():
                     cv2.putText(image_bgr, f"{detected_label.upper()}: {np.max(probabilities):.2f}", 
                                (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
 
-    # 2. PHÁT HIỆN BỎ TAY -> THÊM SPACE
+    # 2. PHÁT HIỆN BỎ TAY -> THÊM SPACE VÀ TỰ ĐỘNG THÊM DẤU
     if was_hand_present and not is_hand_present:
         if current_sequence_raw and current_sequence_raw[-1] != " ":
             current_sequence_raw.append(" ")
-            print("Hand removed -> Added SPACE")
-            cv2.putText(image_bgr, "SPACE ADDED", (frame_w // 2 - 150, frame_h // 2), 
+            
+            # Trích word cuối cùng (từ sau space trước đó)
+            raw_text = "".join(current_sequence_raw)
+            words = raw_text.split()
+            if words and len(words) >= 1:
+                last_word = words[-1]
+                print(f"[AUTO-ACCENT] Processing word: '{last_word}'")
+                
+                # Đưa vào queue để xử lý async (không block main thread)
+                try:
+                    processing_queue.put(last_word, block=False)
+                except:
+                    print("[QUEUE] Full, skipping...")
+            
+            print("[HAND-REMOVED] Added SPACE")
+            cv2.putText(image_bgr, "SPACE + AUTO-ACCENT", (frame_w // 2 - 200, frame_h // 2), 
                         cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 3)
 
     was_hand_present = is_hand_present
@@ -244,9 +282,9 @@ while cap.isOpened():
     else:
         last_stable_prediction = None
 
-    # 4. HIỂN THỊ UI (GIỮ NGUYÊN TIẾNG ANH, DÙNG HÀM VẼ FONT XỊN)
-    ui_height = 120
-    cv2.rectangle(image_bgr, (0, frame_h - ui_height), (frame_w, frame_h), (30, 30, 30), -1)
+    # 4. HIỂN THỊ UI SMOOTH (STREAM LIÊN TỤC, KHÔNG RỜI RẠC)
+    ui_height = 130
+    cv2.rectangle(image_bgr, (0, frame_h - ui_height), (frame_w, frame_h), (20, 20, 20), -1)
 
     raw_text_combined = "".join(current_sequence_raw).strip()
     if raw_text_combined:
@@ -254,32 +292,52 @@ while cap.isOpened():
     else:
         raw_text_display = ""
         
-    # Dùng draw_vn_text cho dòng Raw (đề phòng model trả về từ có dấu)
-    image_bgr = draw_vn_text(image_bgr, f"Raw: {raw_text_display}", (20, frame_h - 80), font_size=30, color=(200, 200, 200))
+    # Dòng Raw (không dấu, thời gian thực)
+    image_bgr = draw_vn_text(image_bgr, f"Raw:   {raw_text_display}", (20, frame_h - 80), font_size=32, color=(150, 150, 255))
 
-    # Dòng Final: Đây là nơi quan trọng nhất cần hiển thị tiếng Việt
-    final_display = f"Final: {final_sentence}"
-    if is_processing_accent:
-        final_display = "Final: Processing..."
+    # Dòng Final (có dấu, được cập nhật liên tục từ worker thread)
+    final_display = f"Final: {final_sentence}" if final_sentence else "Final: Waiting..."
+    color = (0, 255, 0) if final_sentence else (150, 150, 150)
     
-    image_bgr = draw_vn_text(image_bgr, final_display, (20, frame_h - 40), font_size=35, color=(0, 255, 0))
+    image_bgr = draw_vn_text(image_bgr, final_display, (20, frame_h - 40), font_size=32, color=color)
 
-    # Hướng dẫn (Tiếng Anh)
-    guide_text = "'f': Fix Accents | 'c': Clear | 'q': Quit"
-    cv2.putText(image_bgr, guide_text, (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+    # Hướng dẫn
+    guide_text = "'f': Manual Fix | 'c': Clear | 'q': Quit | AUTO-ACCENT: ON"
+    cv2.putText(image_bgr, guide_text, (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100, 255, 100), 1)
 
     cv2.imshow(WINDOW_NAME, image_bgr)
 
     key = cv2.waitKey(1) & 0xFF
-    if key == ord('q'): break
+    if key == ord('q'): 
+        break
     elif key == ord('c'):
         current_sequence_raw = []
         final_sentence = ""
+        # Clear queue
+        while not processing_queue.empty():
+            try:
+                processing_queue.get_nowait()
+            except:
+                break
+        print("[CLEAR] Reset all")
     elif key == ord('f'):
-        if current_sequence_raw and not is_processing_accent:
+        # Manual accent fixing (fallback)
+        if current_sequence_raw:
             input_sentence = "".join(current_sequence_raw)
-            threading.Thread(target=process_accent_async, args=(input_sentence,)).start()
+            try:
+                processing_queue.put(input_sentence, block=False)
+                print(f"[MANUAL] Queued: '{input_sentence}'")
+            except:
+                print("[ERROR] Queue full")
+
+# --- CLEANUP ---
+print("Shutting down...")
+should_stop = True
+processing_queue.put(None)  # Signal worker to stop
+if worker_thread:
+    worker_thread.join(timeout=2)
 
 cap.release()
 cv2.destroyAllWindows()
 hands.close()
+print("✓ Pipeline closed")

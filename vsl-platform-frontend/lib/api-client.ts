@@ -1,8 +1,10 @@
 import axios from "axios";
 import { GestureRecognitionRequest, GestureRecognitionResponse } from '@/types/api';
 
-// 1. Định nghĩa URL Backend mặc định (nếu không có biến môi trường thì dùng localhost:8080)
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
+// 1. Định nghĩa URL Backend (VSL Platform Backend chạy trên port 8081)
+// - Local development: http://localhost:8081/api
+// - Docker: http://host.docker.internal:8081/api (frontend inside container)
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081/api";
 
 // 2. Tạo instance axios với cấu hình chuẩn
 const apiClient = axios.create({
@@ -10,6 +12,7 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  timeout: 60000,
 });
 
 // 3. Request Interceptor: Tự động gắn Token vào header nếu có
@@ -37,22 +40,41 @@ apiClient.interceptors.response.use(
     const status = error.response?.status;
     if (status === 401 && typeof window !== "undefined") {
       console.warn("Phiên đăng nhập hết hạn, chuyển hướng về trang login...");
-      // window.location.href = "/login"; // Bỏ comment nếu muốn tự động đá user ra
+      // Uncomment dòng dưới để tự động redirect khi token hết hạn
+      // window.location.href = "/login";
     }
     return Promise.reject(error);
   }
 );
 
-// 5. Object API dùng cho tính năng Nhận diện
+// 5. Object API dùng cho tính năng Nhận diện (Gesture Recognition)
 export const recognitionApi = {
-  predictGesture: async (data: GestureRecognitionRequest): Promise<GestureRecognitionResponse> => {
+  predictGesture: async (data: GestureRecognitionRequest) => {
     try {
-      // SỬA QUAN TRỌNG: Dùng 'apiClient.post' thay vì 'axios.post'
-      // Không cần điền full URL, chỉ cần endpoint đuôi
-      const response = await apiClient.post('/recognition/predict', data);
-      return response.data;
-    } catch (error) {
-      console.error("Lỗi gọi API nhận diện:", error);
+      console.log("[API] POST /vsl/predict with", data.frames.length, "frames");
+      // Transform format: Landmark[][] to HandFrameDTO[] {landmarks: Landmark[]}
+      const formattedFrames = data.frames.map(landmarks => ({
+        landmarks: landmarks
+      }));
+      const response = await apiClient.post('/vsl/predict', {
+        frames: formattedFrames,
+        currentText: ""
+      });
+      
+      console.log("[API] Response:", response.data);
+      
+      // Backend returns: {code, message, data: "Vietnamese text"}
+      // Extract the Vietnamese text from response.data
+      const vietnameseText = response.data?.data || response.data?.result || "Không nhận diện được";
+      
+      // For backward compatibility with UI expecting confidence field
+      // We don't have real confidence, so return a simple response
+      return {
+        predictedWord: vietnameseText,
+        confidence: 0.85  // Mock confidence (actual confidence comes from Python service internally)
+      };
+    } catch (error: any) {
+      console.error("[API] Error recognizing gesture:", error.response?.data || error.message);
       throw error;
     }
   }

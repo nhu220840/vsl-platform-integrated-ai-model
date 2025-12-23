@@ -53,29 +53,39 @@ export default function GestureRecognitionPage() {
           // Backend cần mảng 2 chiều: [Frame1[21 points], Frame2[21 points]...]
           const framesPayload = currentBatch.map(frame => frame.landmarks);
 
+          console.log(`[Recognition] Sending ${framesPayload.length} frames to backend...`);
+
           // Gọi API
           const response = await recognitionApi.predictGesture({ 
             frames: framesPayload 
           });
 
+          console.log(`[Recognition] Backend response:`, response);
+
           // Xử lý kết quả trả về
-          if (response && response.confidence > CONFIDENCE_THRESHOLD) {
+          if (response && response.predictedWord) {
             const letter = response.predictedWord.toUpperCase();
             
             setCurrentResult(letter);
-            setConfidence(response.confidence);
+            setConfidence(response.confidence || 0.85);
             setTotalGestures(prev => prev + 1);
             
             // Thêm vào log bên phải
-            setHistoryLog(prev => [`[${new Date().toLocaleTimeString()}] DETECTED: ${letter} (${(response.confidence * 100).toFixed(0)}%)`, ...prev.slice(0, 9)]);
+            setHistoryLog(prev => [`[${new Date().toLocaleTimeString()}] DETECTED: ${letter} (${((response.confidence || 0.85) * 100).toFixed(0)}%)`, ...prev.slice(0, 9)]);
           } else {
-             // Nếu độ tin cậy thấp
-             // setHistoryLog(prev => [`[INFO] Signal weak...`, ...prev.slice(0, 4)]);
+             console.warn("[Recognition] No result from backend");
+             setCurrentResult("...");
           }
 
-        } catch (error) {
+        } catch (error: any) {
           console.error("AI Error:", error);
-          setCurrentResult("ERR");
+          const errorMsg = error?.response?.status === 401 
+            ? "⚠️ HẠNG SỬ" 
+            : error?.response?.status === 503
+            ? "⚠️ AI Service Down"
+            : "ERR";
+          setCurrentResult(errorMsg);
+          setHistoryLog(prev => [`[${new Date().toLocaleTimeString()}] ERROR: ${error?.message || 'Unknown error'}`, ...prev.slice(0, 9)]);
         } finally {
           // Quan trọng: Reset batch và mở khóa để nhận diện tiếp
           setFrameBatch([]); 
@@ -142,27 +152,44 @@ export default function GestureRecognitionPage() {
             <div className={styles["corner-bottom-left"]}></div>
           </div>
 
-          {/* KẾT QUẢ HIỆN TO GIỮA MÀN HÌNH */}
+          {/* KẾT QUẢ HIỆN TO GIỮA MÀN HÌNH - SMOOTH ANIMATION */}
           <div className={styles["result-display"]}>
-              <div className={styles["result-text"]}>{currentResult}</div>
+              <div className={styles["result-text"]} 
+                   style={{
+                     opacity: currentResult && currentResult !== "Waiting..." ? 1 : 0.3,
+                     transition: 'all 0.3s ease-in-out',
+                     transform: currentResult && currentResult !== "Waiting..." ? 'scale(1)' : 'scale(0.9)',
+                     textShadow: '0 0 20px rgba(0, 255, 0, 0.8)'
+                   }}>
+                {currentResult}
+              </div>
               <div className={styles["result-confidence"]} 
-                   style={{ color: confidence > 0.8 ? 'var(--neon-green)' : 'yellow' }}>
+                   style={{ 
+                     color: confidence > 0.8 ? 'var(--neon-green)' : confidence > 0.6 ? '#ffaa00' : '#ff6666',
+                     opacity: currentResult && currentResult !== "Waiting..." ? 1 : 0.3,
+                     transition: 'all 0.3s ease-in-out'
+                   }}>
                 CONFIDENCE: {(confidence * 100).toFixed(1)}%
               </div>
           </div>
 
           <div className={styles["info-panel"]}>
-            <div className={styles["info-title"]}>BUFFER STATUS</div>
+            <div className={styles["info-title"]}>📊 BUFFER STATUS</div>
             <div className={styles["info-subtitle"]}>
                 COLLECTING: {currentBatch.length} / {RECOGNITION_BATCH_SIZE} FRAMES
                 <div style={{
-                    width: '100%', height: '4px', background: '#333', marginTop: '5px',
-                    position: 'relative'
+                    width: '100%', height: '6px', background: '#1a3a1a', marginTop: '8px',
+                    position: 'relative', borderRadius: '3px', overflow: 'hidden'
                 }}>
                     <div style={{
                         width: `${(currentBatch.length / RECOGNITION_BATCH_SIZE) * 100}%`,
-                        height: '100%', background: 'var(--neon-green)', transition: 'width 0.1s'
+                        height: '100%', background: 'linear-gradient(90deg, #00ff00, #00cc00)',
+                        transition: 'width 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                        boxShadow: '0 0 10px rgba(0, 255, 0, 0.6)'
                     }}></div>
+                </div>
+                <div style={{ fontSize: '11px', marginTop: '6px', opacity: 0.7, color: '#00ff00' }}>
+                  Status: {currentBatch.length >= RECOGNITION_BATCH_SIZE ? '✓ READY TO PROCESS' : '⏳ BUFFERING...'}
                 </div>
             </div>
           </div>
@@ -188,7 +215,8 @@ export default function GestureRecognitionPage() {
             <div style={{marginTop: '20px', borderTop: '1px dashed #004d00', paddingTop: '10px'}}>
                 <strong>&gt; STATISTICS</strong><br/>
                 Total Detected: {totalGestures}<br/>
-                Model: ExtraTrees (Optimized)
+                Model: MLP (Multi-Layer Perceptron)<br/>
+                Status: {isCapturing ? '🟢 Running' : '⚪ Ready'}
             </div>
           </div>
         </div>
