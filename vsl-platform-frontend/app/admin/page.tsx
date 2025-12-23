@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react"; // 1. Import useEffect
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
@@ -16,15 +16,26 @@ import {
   User
 } from "lucide-react";
 import styles from "../../styles/admin.module.css";
+import { adminApi } from "@/lib/admin-api-client";
 
 export default function AdminDashboard() {
   const pathname = usePathname();
   
-  // 2. State cho đồng hồ
+  // State cho đồng hồ
   const [currentDateTime, setCurrentDateTime] = useState<string>("");
   const adminName = "SHERRY"; // Tên Admin (sau này có thể lấy từ context/API)
+  
+  // State cho stats từ API
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalWords: 0,
+    pendingContributions: 0,
+    uptime: "99.9%"
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // 3. Effect cập nhật thời gian mỗi giây
+  // Effect cập nhật thời gian mỗi giây
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
@@ -40,6 +51,31 @@ export default function AdminDashboard() {
     return () => clearInterval(timer); // Dọn dẹp khi unmount
   }, []);
 
+  // Effect để load stats từ API
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await adminApi.getStats();
+        setStats({
+          totalUsers: data.totalUsers,
+          totalWords: data.totalWords,
+          pendingContributions: data.pendingContributions,
+          uptime: "99.9%" // Uptime không có trong API, giữ giá trị mặc định
+        });
+      } catch (err: any) {
+        console.error("Error loading dashboard stats:", err);
+        setError(err.response?.data?.message || err.message || "Failed to load statistics");
+        // Giữ giá trị mặc định khi lỗi
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadStats();
+  }, []);
+
   // Menu Configuration
   const menuItems = [
     { label: "[DASHBOARD]", href: "/admin", icon: LayoutDashboard },
@@ -47,14 +83,6 @@ export default function AdminDashboard() {
     { label: "[CONTRIBUTIONS]", href: "/admin/contributions", icon: FileText },
     { label: "[DICTIONARY_DB]", href: "/admin/dictionary", icon: BookOpen },
   ];
-
-  // Mock Stats Data
-  const stats = {
-    totalUsers: 1024,
-    totalWords: 5300,
-    pendingContributions: 12,
-    uptime: "99.9%"
-  };
 
   return (
     <div className={styles["admin-container"]}>
@@ -124,6 +152,19 @@ export default function AdminDashboard() {
           SYSTEM OVERVIEW
         </h1>
 
+        {error && (
+          <div style={{ 
+            padding: '12px', 
+            marginBottom: '20px', 
+            background: 'rgba(255,0,0,0.1)', 
+            border: '1px solid #ff0000',
+            color: '#ff0000',
+            fontSize: '12px'
+          }}>
+            ERROR: {error}
+          </div>
+        )}
+
         <div className={styles["stats-grid"]}>
           
           <div className={styles["stat-card"]}>
@@ -131,7 +172,9 @@ export default function AdminDashboard() {
               <Users size={32} />
             </div>
             <div className={styles["stat-label"]}>TOTAL USERS</div>
-            <div className={styles["stat-value"]}>{stats.totalUsers.toLocaleString()}</div>
+            <div className={styles["stat-value"]}>
+              {loading ? "..." : stats.totalUsers.toLocaleString()}
+            </div>
             <div className={styles["stat-unit"]}>registered accounts</div>
           </div>
 
@@ -140,7 +183,9 @@ export default function AdminDashboard() {
               <BookOpen size={32} />
             </div>
             <div className={styles["stat-label"]}>TOTAL WORDS</div>
-            <div className={styles["stat-value"]}>{stats.totalWords.toLocaleString()}</div>
+            <div className={styles["stat-value"]}>
+              {loading ? "..." : stats.totalWords.toLocaleString()}
+            </div>
             <div className={styles["stat-unit"]}>in database</div>
           </div>
 
@@ -149,7 +194,9 @@ export default function AdminDashboard() {
               <AlertCircle size={32} />
             </div>
             <div className={styles["stat-label"]}>PENDING CONTRIBUTIONS</div>
-            <div className={styles["stat-value"]}>{stats.pendingContributions}</div>
+            <div className={styles["stat-value"]}>
+              {loading ? "..." : stats.pendingContributions}
+            </div>
             <div className={styles["stat-unit"]}>awaiting review</div>
           </div>
 

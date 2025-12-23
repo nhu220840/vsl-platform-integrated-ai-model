@@ -9,8 +9,9 @@ import {
   Eye, Key, User as UserIcon, MapPin, Calendar, Phone, Mail, FileCode 
 } from "lucide-react";
 import styles from "../../../styles/admin-users.module.css";
+import { adminApi, UserDTO } from "@/lib/admin-api-client";
 
-// 1. Interface đầy đủ
+// Interface để map từ UserDTO sang User (cho UI)
 interface User {
   id: number;
   username: string;
@@ -19,7 +20,7 @@ interface User {
   dob: string;
   address: string;
   phoneNumber?: string;
-  bio?: string; // Thêm trường Bio
+  bio?: string;
   role: "ADMIN" | "USER" | "MODERATOR";
   status: "ACTIVE" | "INACTIVE" | "BANNED";
   lastLogin: string;
@@ -27,58 +28,37 @@ interface User {
   avatar?: string;
 }
 
+// Helper function để convert UserDTO sang User
+const mapUserDTOToUser = (dto: UserDTO): User => {
+  return {
+    id: dto.id,
+    username: dto.username,
+    email: dto.email,
+    fullName: dto.fullName || "",
+    dob: dto.dateOfBirth || "",
+    address: dto.address || "",
+    phoneNumber: dto.phoneNumber || undefined,
+    bio: dto.bio || undefined,
+    role: (dto.role as "ADMIN" | "USER" | "MODERATOR") || "USER",
+    status: "ACTIVE", // Backend không có status field, mặc định ACTIVE
+    lastLogin: "Never", // Backend không có lastLogin, có thể thêm sau
+    joinDate: dto.createdAt ? new Date(dto.createdAt).toLocaleDateString('en-GB') : "",
+    avatar: dto.avatarUrl || undefined
+  };
+};
+
 export default function AdminUsersPage() {
   const pathname = usePathname();
   const [currentDateTime, setCurrentDateTime] = useState<string>("");
   const adminName = "SHERRY";
 
-  // --- 2. Mock Data ---
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: 1,
-      username: "admin_core",
-      email: "admin@vsl.vn",
-      fullName: "Sherry Administrator",
-      dob: "1999-08-22",
-      address: "Hanoi, Vietnam",
-      phoneNumber: "0912345678",
-      bio: "System Administrator with Level 5 clearance.",
-      role: "ADMIN",
-      status: "ACTIVE",
-      lastLogin: "Today, 10:42 AM",
-      joinDate: "01/01/2024",
-      avatar: "https://ui-avatars.com/api/?name=Admin+Core&background=0D8ABC&color=fff"
-    },
-    {
-      id: 2,
-      username: "contributor_01",
-      email: "contributor@vsl.vn",
-      fullName: "Nguyen Van A",
-      dob: "2000-01-15",
-      address: "Ho Chi Minh City",
-      phoneNumber: "0987654321",
-      bio: "Top contributor in Southern region dialects.",
-      role: "MODERATOR",
-      status: "ACTIVE",
-      lastLogin: "Yesterday, 15:30 PM",
-      joinDate: "15/02/2024",
-      avatar: "https://ui-avatars.com/api/?name=Contributor+01&background=random"
-    },
-    {
-      id: 3,
-      username: "user_test_99",
-      email: "test99@gmail.com",
-      fullName: "Le Thi B",
-      dob: "1995-12-05",
-      address: "Da Nang, Vietnam",
-      phoneNumber: "0901234567",
-      role: "USER",
-      status: "INACTIVE",
-      lastLogin: "2 days ago",
-      joinDate: "20/05/2024",
-      avatar: "https://ui-avatars.com/api/?name=User+Test&background=random"
-    }
-  ]);
+  // State cho users từ API
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
 
   const [searchTerm, setSearchTerm] = useState("");
   
@@ -104,6 +84,28 @@ export default function AdminUsersPage() {
     const timer = setInterval(updateTime, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Load users từ API
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await adminApi.getUsers(page, 20);
+        const mappedUsers = response.content.map(mapUserDTOToUser);
+        setUsers(mappedUsers);
+        setTotalPages(response.totalPages);
+        setTotalElements(response.totalElements);
+      } catch (err: any) {
+        console.error("Error loading users:", err);
+        setError(err.response?.data?.message || err.message || "Failed to load users");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUsers();
+  }, [page]);
 
   const menuItems = [
     { label: "[DASHBOARD]", href: "/admin", icon: LayoutDashboard },
@@ -156,35 +158,92 @@ export default function AdminUsersPage() {
     setIsProfileModalOpen(true);
   };
 
-  const handleDeleteUser = (id: number) => {
-    if(confirm("WARNING: Are you sure you want to delete this user?")) {
-      setUsers(users.filter(u => u.id !== id));
+  const handleDeleteUser = async (id: number) => {
+    if(!confirm("WARNING: Are you sure you want to delete this user?")) {
+      return;
+    }
+
+    try {
+      await adminApi.deleteUser(id);
+      // Reload users sau khi xóa
+      const response = await adminApi.getUsers(page, 20);
+      const mappedUsers = response.content.map(mapUserDTOToUser);
+      setUsers(mappedUsers);
+      setTotalPages(response.totalPages);
+      setTotalElements(response.totalElements);
+      alert("User deleted successfully!");
+    } catch (err: any) {
+      console.error("Error deleting user:", err);
+      alert(err.response?.data?.message || err.message || "Failed to delete user");
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!currentUser.username || !currentUser.email) {
         alert("Username and Email are required!");
         return;
     }
 
-    if (isEditMode && currentUser.id) {
-        // Update logic
-        setUsers(users.map(u => (u.id === currentUser.id ? { ...u, ...currentUser } as User : u)));
-        if (newPassword) alert(`Password changed for ${currentUser.username}`);
-    } else {
-        // Create logic
-        const newUser: User = {
-            ...currentUser as User,
-            id: Date.now(), // Fake ID
-            joinDate: new Date().toLocaleDateString('en-GB'),
-            lastLogin: "Never",
-            avatar: currentUser.avatar || `https://ui-avatars.com/api/?name=${currentUser.fullName || 'User'}&background=random`
+    try {
+      if (isEditMode && currentUser.id) {
+        // Update user
+        const updateData: Partial<UserDTO> = {
+          username: currentUser.username,
+          email: currentUser.email,
+          fullName: currentUser.fullName || null,
+          phoneNumber: currentUser.phoneNumber || null,
+          dateOfBirth: currentUser.dob || null,
+          address: currentUser.address || null,
+          bio: currentUser.bio || null,
+          role: currentUser.role as any,
+          avatarUrl: currentUser.avatar || null
         };
-        setUsers([newUser, ...users]);
-        if (newPassword) alert(`User created with password: ${newPassword}`);
+        
+        const updated = await adminApi.updateUser(currentUser.id, updateData);
+        
+        // Reset password nếu có
+        if (newPassword && newPassword.trim()) {
+          await adminApi.resetUserPassword(currentUser.id, newPassword);
+        }
+        
+        // Reload users
+        const response = await adminApi.getUsers(page, 20);
+        const mappedUsers = response.content.map(mapUserDTOToUser);
+        setUsers(mappedUsers);
+        alert("User updated successfully!");
+      } else {
+        // Create user
+        if (!newPassword || !newPassword.trim()) {
+          alert("Password is required for new users!");
+          return;
+        }
+        
+        const createData = {
+          username: currentUser.username!,
+          email: currentUser.email!,
+          password: newPassword,
+          fullName: currentUser.fullName || undefined,
+          phoneNumber: currentUser.phoneNumber || undefined,
+          dateOfBirth: currentUser.dob || undefined,
+          address: currentUser.address || undefined,
+          bio: currentUser.bio || undefined
+        };
+        
+        await adminApi.createUser(createData);
+        
+        // Reload users
+        const response = await adminApi.getUsers(page, 20);
+        const mappedUsers = response.content.map(mapUserDTOToUser);
+        setUsers(mappedUsers);
+        setTotalPages(response.totalPages);
+        setTotalElements(response.totalElements);
+        alert("User created successfully!");
+      }
+      setIsModalOpen(false);
+    } catch (err: any) {
+      console.error("Error saving user:", err);
+      alert(err.response?.data?.message || err.message || "Failed to save user");
     }
-    setIsModalOpen(false);
   };
 
   return (
@@ -248,11 +307,24 @@ export default function AdminUsersPage() {
           </div>
         </div>
 
+        {error && (
+          <div style={{ 
+            padding: '12px', 
+            marginBottom: '20px', 
+            background: 'rgba(255,0,0,0.1)', 
+            border: '1px solid #ff0000',
+            color: '#ff0000',
+            fontSize: '12px'
+          }}>
+            ERROR: {error}
+          </div>
+        )}
+
         {/* Stats */}
         <div className={styles["stats-container"]}>
-          <div className={styles["stat-card"]}><div className={styles["stat-icon"]}><Users /></div><div className={styles["stat-info"]}><span className={styles["stat-value"]}>{users.length}</span><span className={styles["stat-label"]}>TOTAL USERS</span></div></div>
-          <div className={styles["stat-card"]}><div className={styles["stat-icon"]}><UserCheck /></div><div className={styles["stat-info"]}><span className={styles["stat-value"]}>{users.filter(u=>u.status==='ACTIVE').length}</span><span className={styles["stat-label"]}>ACTIVE NOW</span></div></div>
-          <div className={styles["stat-card"]}><div className={styles["stat-icon"]}><Shield /></div><div className={styles["stat-info"]}><span className={styles["stat-value"]}>{users.filter(u=>u.role==='ADMIN'||u.role==='MODERATOR').length}</span><span className={styles["stat-label"]}>ADMINS</span></div></div>
+          <div className={styles["stat-card"]}><div className={styles["stat-icon"]}><Users /></div><div className={styles["stat-info"]}><span className={styles["stat-value"]}>{loading ? "..." : totalElements}</span><span className={styles["stat-label"]}>TOTAL USERS</span></div></div>
+          <div className={styles["stat-card"]}><div className={styles["stat-icon"]}><UserCheck /></div><div className={styles["stat-info"]}><span className={styles["stat-value"]}>{loading ? "..." : users.filter(u=>u.status==='ACTIVE').length}</span><span className={styles["stat-label"]}>ACTIVE NOW</span></div></div>
+          <div className={styles["stat-card"]}><div className={styles["stat-icon"]}><Shield /></div><div className={styles["stat-info"]}><span className={styles["stat-value"]}>{loading ? "..." : users.filter(u=>u.role==='ADMIN'||u.role==='MODERATOR').length}</span><span className={styles["stat-label"]}>ADMINS</span></div></div>
           <div className={styles["stat-card"]}><div className={styles["stat-icon"]}><Activity /></div><div className={styles["stat-info"]}><span className={styles["stat-value"]}>98%</span><span className={styles["stat-label"]}>RETENTION</span></div></div>
         </div>
 
@@ -267,6 +339,11 @@ export default function AdminUsersPage() {
 
         {/* Table */}
         <div className={styles["table-container"]}>
+          {loading ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>
+              Loading users...
+            </div>
+          ) : (
           <table className={styles["data-table"]}>
             <thead>
               <tr>
@@ -279,7 +356,14 @@ export default function AdminUsersPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.map((user) => (
+              {filteredUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
+                    No users found
+                  </td>
+                </tr>
+              ) : (
+              filteredUsers.map((user) => (
                 <tr key={user.id}>
                   <td>#{user.id}</td>
                   
@@ -326,9 +410,10 @@ export default function AdminUsersPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
+        )}
         </div>
       </main>
 

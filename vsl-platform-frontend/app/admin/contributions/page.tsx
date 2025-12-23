@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react"; // 1. Thêm useEffect
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
@@ -13,9 +13,10 @@ import {
   Lock,
   CheckCircle,
   XCircle,
-  User // 2. Thêm icon User
+  User
 } from "lucide-react";
 import styles from "../../../styles/admin-contributions.module.css";
+import { adminApi, ContributionDTO } from "@/lib/admin-api-client";
 
 interface Contribution {
   id: number;
@@ -29,12 +30,39 @@ interface Contribution {
   videoUrl?: string;
 }
 
+// Helper để parse stagingData từ ContributionDTO
+const parseContribution = (dto: ContributionDTO): Contribution => {
+  let stagingData: { word?: string; definition?: string; videoUrl?: string; category?: string; difficulty?: string } = {};
+  try {
+    stagingData = JSON.parse(dto.stagingData || "{}");
+  } catch (e) {
+    console.error("Error parsing stagingData:", e);
+  }
+
+  return {
+    id: dto.id,
+    word: stagingData.word || "N/A",
+    user: dto.username || `User #${dto.userId}`,
+    category: stagingData.category || "General",
+    difficulty: stagingData.difficulty || "Medium",
+    submitDate: dto.createdAt ? new Date(dto.createdAt).toLocaleDateString('en-GB') : "",
+    status: dto.status,
+    definition: stagingData.definition || "",
+    videoUrl: stagingData.videoUrl
+  };
+};
+
 export default function AdminContributionsPage() {
   const pathname = usePathname();
   
-  // 3. Logic đồng hồ và tên Admin
+  // Logic đồng hồ và tên Admin
   const [currentDateTime, setCurrentDateTime] = useState<string>("");
   const adminName = "SHERRY";
+
+  // State cho contributions từ API
+  const [contributions, setContributions] = useState<Contribution[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const updateTime = () => {
@@ -48,6 +76,26 @@ export default function AdminContributionsPage() {
     return () => clearInterval(timer);
   }, []);
 
+  // Load contributions từ API
+  useEffect(() => {
+    const loadContributions = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await adminApi.getContributions("PENDING");
+        const parsed = data.map(parseContribution);
+        setContributions(parsed);
+      } catch (err: any) {
+        console.error("Error loading contributions:", err);
+        setError(err.response?.data?.message || err.message || "Failed to load contributions");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadContributions();
+  }, []);
+
   // Menu Config
   const menuItems = [
     { label: "[DASHBOARD]", href: "/admin", icon: LayoutDashboard },
@@ -56,50 +104,40 @@ export default function AdminContributionsPage() {
     { label: "[DICTIONARY_DB]", href: "/admin/dictionary", icon: BookOpen },
   ];
 
-  const [contributions, setContributions] = useState<Contribution[]>([
-    {
-      id: 1,
-      word: "Học tập",
-      user: "user123",
-      category: "Education",
-      difficulty: "Medium",
-      submitDate: "12/11/2024",
-      status: "PENDING",
-      definition: "Quá trình tiếp thu kiến thức, kỹ năng, kinh nghiệm mới thông qua việc học, nghiên cứu hoặc giảng dạy.",
-      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" 
-    },
-    {
-      id: 2,
-      word: "Gia đình",
-      user: "testuser",
-      category: "Family",
-      difficulty: "Easy",
-      submitDate: "10/11/2024",
-      status: "PENDING",
-      definition: "Tập hợp những người gắn bó với nhau do hôn nhân, quan hệ huyết thống hoặc quan hệ nuôi dưỡng.",
-      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ"
-    },
-    {
-        id: 3,
-        word: "Cảm ơn",
-        user: "user456",
-        category: "Communication",
-        difficulty: "Easy",
-        submitDate: "08/11/2024",
-        status: "PENDING",
-        definition: "Lời nói biểu thị sự biết ơn đối với người khác khi nhận được sự giúp đỡ.",
-        videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ"
-      },
-  ]);
+  const handleApprove = async (id: number) => {
+    if (!confirm(`Approve contribution #${id}?`)) {
+      return;
+    }
 
-  const handleApprove = (id: number) => {
-    alert(`Contribution #${id} approved!`);
-    setContributions((prev) => prev.filter((item) => item.id !== id));
+    try {
+      await adminApi.approveContribution(id);
+      // Reload contributions sau khi approve
+      const data = await adminApi.getContributions("PENDING");
+      const parsed = data.map(parseContribution);
+      setContributions(parsed);
+      alert(`Contribution #${id} approved and added to dictionary!`);
+    } catch (err: any) {
+      console.error("Error approving contribution:", err);
+      alert(err.response?.data?.message || err.message || "Failed to approve contribution");
+    }
   };
 
-  const handleReject = (id: number) => {
-    alert(`Contribution #${id} rejected!`);
-    setContributions((prev) => prev.filter((item) => item.id !== id));
+  const handleReject = async (id: number) => {
+    if (!confirm(`Reject contribution #${id}?`)) {
+      return;
+    }
+
+    try {
+      await adminApi.rejectContribution(id);
+      // Reload contributions sau khi reject
+      const data = await adminApi.getContributions("PENDING");
+      const parsed = data.map(parseContribution);
+      setContributions(parsed);
+      alert(`Contribution #${id} rejected!`);
+    } catch (err: any) {
+      console.error("Error rejecting contribution:", err);
+      alert(err.response?.data?.message || err.message || "Failed to reject contribution");
+    }
   };
 
   return (
@@ -159,7 +197,27 @@ export default function AdminContributionsPage() {
       <main className={styles["main-content"]}>
         <h1 className={styles["page-title"]}>{">"} PENDING REQUESTS</h1>
 
-        {contributions.length > 0 ? (
+        {error && (
+          <div style={{ 
+            padding: '12px', 
+            marginBottom: '20px', 
+            background: 'rgba(255,0,0,0.1)', 
+            border: '1px solid #ff0000',
+            color: '#ff0000',
+            fontSize: '12px'
+          }}>
+            ERROR: {error}
+          </div>
+        )}
+
+        {loading ? (
+          <div className={styles["empty-state"]}>
+            <div className={styles["empty-state-icon"]}>
+              <CheckCircle size={64} />
+            </div>
+            <div>{">"} LOADING...</div>
+          </div>
+        ) : contributions.length > 0 ? (
           <div className={styles["review-list"]}>
             {contributions.map((contrib) => (
               <div key={contrib.id} className={styles["review-card"]}>

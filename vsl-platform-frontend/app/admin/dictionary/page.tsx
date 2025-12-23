@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react"; // 1. Thêm useEffect
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
@@ -18,9 +18,10 @@ import {
   Video, 
   X, 
   Save,
-  User // 2. Thêm icon User
+  User
 } from "lucide-react";
 import styles from "../../../styles/admin-dictionary.module.css";
+import { adminApi, DictionaryDTO } from "@/lib/admin-api-client";
 
 interface DictionaryItem {
   id: number;
@@ -33,12 +34,36 @@ interface DictionaryItem {
   definition: string;
 }
 
+// Helper để map DictionaryDTO sang DictionaryItem (UI format)
+const mapDictionaryDTOToItem = (dto: DictionaryDTO): DictionaryItem => {
+  return {
+    id: dto.id,
+    word: dto.word,
+    category: "General", // Backend không có category, mặc định
+    difficulty: "Medium", // Backend không có difficulty, mặc định
+    views: 0, // Backend không có views, mặc định
+    videoUrl: dto.videoUrl || "",
+    status: "PUBLISHED", // Mặc định PUBLISHED nếu có trong DB
+    definition: dto.definition || ""
+  };
+};
+
 export default function AdminDictionaryPage() {
   const pathname = usePathname();
 
-  // 3. Logic đồng hồ và Admin Name
+  // Logic đồng hồ và Admin Name
   const [currentDateTime, setCurrentDateTime] = useState<string>("");
   const adminName = "SHERRY";
+
+  // State cho dictionary từ API
+  const [words, setWords] = useState<DictionaryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentWord, setCurrentWord] = useState<Partial<DictionaryItem>>({});
+  const [isEditMode, setIsEditMode] = useState(false);
 
   useEffect(() => {
     const updateTime = () => {
@@ -52,50 +77,33 @@ export default function AdminDictionaryPage() {
     return () => clearInterval(timer);
   }, []);
 
+  // Load dictionary từ API
+  useEffect(() => {
+    const loadDictionary = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        // Dùng search với query rộng để lấy tất cả (hoặc có thể thêm API list riêng sau)
+        const data = await adminApi.searchDictionary("*");
+        const mapped = data.map(mapDictionaryDTOToItem);
+        setWords(mapped);
+      } catch (err: any) {
+        console.error("Error loading dictionary:", err);
+        setError(err.response?.data?.message || err.message || "Failed to load dictionary");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDictionary();
+  }, []);
+
   const menuItems = [
     { label: "[DASHBOARD]", href: "/admin", icon: LayoutDashboard },
     { label: "[USER_MANAGEMENT]", href: "/admin/users", icon: Users },
     { label: "[CONTRIBUTIONS]", href: "/admin/contributions", icon: FileText },
     { label: "[DICTIONARY_DB]", href: "/admin/dictionary", icon: BookOpen },
   ];
-
-  const [words, setWords] = useState<DictionaryItem[]>([
-    {
-      id: 1,
-      word: "Xin chào",
-      category: "Greeting",
-      difficulty: "Easy",
-      views: 1234,
-      videoUrl: "https://youtu.be/example1",
-      status: "PUBLISHED",
-      definition: "Lời chào hỏi thông thường."
-    },
-    {
-      id: 2,
-      word: "Cảm ơn",
-      category: "Greeting",
-      difficulty: "Easy",
-      views: 956,
-      videoUrl: "https://youtu.be/example2",
-      status: "PUBLISHED",
-      definition: "Lời nói biểu thị sự biết ơn."
-    },
-    {
-      id: 3,
-      word: "Xin lỗi",
-      category: "Greeting",
-      difficulty: "Easy",
-      views: 782,
-      videoUrl: "",
-      status: "DRAFT",
-      definition: "Lời nói biểu thị sự hối lỗi."
-    },
-  ]);
-
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentWord, setCurrentWord] = useState<Partial<DictionaryItem>>({});
-  const [isEditMode, setIsEditMode] = useState(false);
 
   const filteredWords = words.filter((item) =>
     item.word.toLowerCase().includes(searchTerm.toLowerCase())
@@ -113,15 +121,60 @@ export default function AdminDictionaryPage() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm("Are you sure you want to delete this entry?")) {
-      setWords(words.filter((w) => w.id !== id));
+  const handleDelete = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this entry?")) {
+      return;
+    }
+
+    try {
+      await adminApi.deleteDictionary(id);
+      // Reload dictionary sau khi xóa
+      const data = await adminApi.searchDictionary("*");
+      const mapped = data.map(mapDictionaryDTOToItem);
+      setWords(mapped);
+      alert("Entry deleted successfully!");
+    } catch (err: any) {
+      console.error("Error deleting dictionary entry:", err);
+      alert(err.response?.data?.message || err.message || "Failed to delete entry");
     }
   };
 
-  const handleSave = () => {
-    alert("Saved successfully! (Mock)");
-    setIsModalOpen(false);
+  const handleSave = async () => {
+    if (!currentWord.word || !currentWord.videoUrl) {
+      alert("Word and Video URL are required!");
+      return;
+    }
+
+    try {
+      if (isEditMode && currentWord.id) {
+        // Update dictionary entry
+        const updateData: Partial<DictionaryDTO> = {
+          word: currentWord.word,
+          definition: currentWord.definition || undefined,
+          videoUrl: currentWord.videoUrl
+        };
+        await adminApi.updateDictionary(currentWord.id, updateData);
+        alert("Entry updated successfully!");
+      } else {
+        // Create dictionary entry
+        const createData = {
+          word: currentWord.word!,
+          definition: currentWord.definition || undefined,
+          videoUrl: currentWord.videoUrl!
+        };
+        await adminApi.createDictionary(createData);
+        alert("Entry created successfully!");
+      }
+      
+      // Reload dictionary
+      const data = await adminApi.searchDictionary("*");
+      const mapped = data.map(mapDictionaryDTOToItem);
+      setWords(mapped);
+      setIsModalOpen(false);
+    } catch (err: any) {
+      console.error("Error saving dictionary entry:", err);
+      alert(err.response?.data?.message || err.message || "Failed to save entry");
+    }
   };
 
   return (
@@ -199,7 +252,25 @@ export default function AdminDictionaryPage() {
           </div>
         </div>
 
+        {error && (
+          <div style={{ 
+            padding: '12px', 
+            marginBottom: '20px', 
+            background: 'rgba(255,0,0,0.1)', 
+            border: '1px solid #ff0000',
+            color: '#ff0000',
+            fontSize: '12px'
+          }}>
+            ERROR: {error}
+          </div>
+        )}
+
         <div className={styles["table-container"]}>
+          {loading ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>
+              Loading dictionary...
+            </div>
+          ) : (
           <table className={styles["data-table"]}>
             <thead>
               <tr>
@@ -214,7 +285,14 @@ export default function AdminDictionaryPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredWords.map((item) => (
+              {filteredWords.length === 0 ? (
+                <tr>
+                  <td colSpan={8} style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
+                    No entries found
+                  </td>
+                </tr>
+              ) : (
+              filteredWords.map((item) => (
                 <tr key={item.id}>
                   <td>#{item.id}</td>
                   <td style={{ fontWeight: 'bold', color: '#fff' }}>{item.word}</td>
@@ -254,9 +332,10 @@ export default function AdminDictionaryPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
+        )}
         </div>
       </main>
 
