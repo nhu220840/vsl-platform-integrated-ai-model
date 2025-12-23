@@ -28,6 +28,8 @@ export default function GestureRecognitionPage() {
   const [confidence, setConfidence] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [historyLog, setHistoryLog] = useState<string[]>([]); // Lưu lịch sử nhận diện
+  const [outputText, setOutputText] = useState(""); // Lưu văn bản đầu ra để user có thể xóa
+  const [fixedText, setFixedText] = useState(""); // Kết quả sau khi fix diacritics
 
   // State thống kê (cho đẹp giao diện)
   const [totalGestures, setTotalGestures] = useState(0);
@@ -57,7 +59,8 @@ export default function GestureRecognitionPage() {
 
           // Gọi API
           const response = await recognitionApi.predictGesture({ 
-            frames: framesPayload 
+            frames: framesPayload,
+            currentText: outputText  // Pass accumulated text for accent restoration context
           });
 
           console.log(`[Recognition] Backend response:`, response);
@@ -69,6 +72,12 @@ export default function GestureRecognitionPage() {
             setCurrentResult(letter);
             setConfidence(response.confidence || 0.85);
             setTotalGestures(prev => prev + 1);
+            
+            // Thêm vào output text nếu confidence cao
+            if ((response.confidence || 0.85) >= CONFIDENCE_THRESHOLD) {
+              setOutputText(prev => prev + letter);
+              console.log(`[OUTPUT] Added: ${letter}, Total: ${outputText + letter}`);
+            }
             
             // Thêm vào log bên phải
             setHistoryLog(prev => [`[${new Date().toLocaleTimeString()}] DETECTED: ${letter} (${((response.confidence || 0.85) * 100).toFixed(0)}%)`, ...prev.slice(0, 9)]);
@@ -224,17 +233,105 @@ export default function GestureRecognitionPage() {
 
       {/* FOOTER CONTROLS */}
       <div className={styles["control-panel"]}>
-        <Link href="/dashboard" className={styles["tactical-btn"]}>
-          <i className="fas fa-arrow-left"></i> EXIT
-        </Link>
-        <button className={styles["tactical-btn"]} onClick={() => {
-            setCurrentResult("Waiting...");
-            setTotalGestures(0);
-            setHistoryLog([]);
-            setFrameBatch([]);
-        }}>
-          <i className="fas fa-sync"></i> RESET
-        </button>
+        <div style={{ flex: 1, display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <Link href="/dashboard" className={styles["tactical-btn"]}>
+            <i className="fas fa-arrow-left"></i> EXIT
+          </Link>
+          <button className={styles["tactical-btn"]} onClick={() => {
+              setCurrentResult("Waiting...");
+              setTotalGestures(0);
+              setHistoryLog([]);
+              setFrameBatch([]);
+          }}>
+            <i className="fas fa-sync"></i> RESET
+          </button>
+          
+          {/* ADD SPACE */}
+          <button 
+            className={styles["tactical-btn"]} 
+            style={{ background: '#0066ff' }}
+            onClick={() => {
+              setOutputText(prev => prev + " ");
+              console.log(`[SPACE] Added space`);
+            }}
+          >
+            <i className="fas fa-long-arrow-alt-right"></i> SPACE
+          </button>
+
+          {/* FIX DIACRITICS */}
+          <button 
+            className={styles["tactical-btn"]} 
+            style={{ background: outputText.length > 0 ? '#00aa00' : '#333333', opacity: outputText.length > 0 ? 1 : 0.5 }}
+            disabled={outputText.length === 0}
+            onClick={() => {
+              // Call backend to fix diacritics for the entire text
+              console.log(`[FIX-DIACRITICS] Processing: "${outputText}"`);
+              setFixedText("Fixing...");
+              recognitionApi.fixDiacritics(outputText).then(result => {
+                setFixedText(result);
+                console.log(`[FIX-DIACRITICS] Result: "${result}"`);
+              }).catch(err => {
+                console.error("[FIX-DIACRITICS] Error:", err);
+                setFixedText("Error fixing diacritics");
+              });
+            }}
+          >
+            <i className="fas fa-check"></i> FIX TEXT
+          </button>
+          
+          {/* DELETE BUTTON */}
+          <button 
+            className={styles["tactical-btn"]} 
+            style={{ background: outputText.length > 0 ? '#ff3333' : '#333333', opacity: outputText.length > 0 ? 1 : 0.5 }}
+            disabled={outputText.length === 0}
+            onClick={() => {
+              setOutputText(prev => prev.slice(0, -1));
+              console.log(`[DELETE] Removed last char. Remaining: "${outputText.slice(0, -1)}"`);
+            }}
+          >
+            <i className="fas fa-backspace"></i> DELETE
+          </button>
+
+          {/* CLEAR ALL TEXT */}
+          <button 
+            className={styles["tactical-btn"]} 
+            style={{ background: outputText.length > 0 ? '#ff6600' : '#333333', opacity: outputText.length > 0 ? 1 : 0.5 }}
+            disabled={outputText.length === 0}
+            onClick={() => {
+              setOutputText("");
+              setFixedText("");
+              console.log("[CLEAR] All text cleared");
+            }}
+          >
+            <i className="fas fa-trash"></i> CLEAR ALL
+          </button>
+        </div>
+      </div>
+
+      {/* OUTPUT TEXT DISPLAY */}
+      <div style={{
+        position: 'fixed',
+        bottom: '100px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        background: 'rgba(20, 40, 20, 0.95)',
+        border: '2px solid #00ff00',
+        padding: '15px 25px',
+        borderRadius: '5px',
+        fontSize: '18px',
+        fontFamily: 'monospace',
+        color: '#00ff00',
+        textShadow: '0 0 10px rgba(0, 255, 0, 0.8)',
+        maxWidth: '80%',
+        wordBreak: 'break-word',
+        boxShadow: '0 0 20px rgba(0, 255, 0, 0.3)'
+      }}>
+        <div><strong>RAW:</strong> {outputText || <span style={{ opacity: 0.5 }}>Waiting for recognition...</span>}</div>
+        {fixedText && (
+          <div style={{ marginTop: '8px', color: '#ffdd00', borderTop: '1px solid #ffdd00', paddingTop: '8px' }}>
+            <strong>FIXED:</strong> {fixedText === "Fixing..." ? "Processing..." : fixedText}
+          </div>
+        )}
       </div>
     </div>
   );

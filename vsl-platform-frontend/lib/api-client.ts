@@ -6,6 +6,14 @@ import { GestureRecognitionRequest, GestureRecognitionResponse } from '@/types/a
 // - Docker: http://host.docker.internal:8081/api (frontend inside container)
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081/api";
 
+// Type định nghĩa response structure
+interface ApiResponse<T> {
+  code?: string | number;
+  message?: string;
+  data?: T;
+  result?: T;
+}
+
 // 2. Tạo instance axios với cấu hình chuẩn
 const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -49,17 +57,23 @@ apiClient.interceptors.response.use(
 
 // 5. Object API dùng cho tính năng Nhận diện (Gesture Recognition)
 export const recognitionApi = {
-  predictGesture: async (data: GestureRecognitionRequest) => {
+  predictGesture: async (data: GestureRecognitionRequest & { currentText?: string }) => {
     try {
       console.log("[API] POST /vsl/predict with", data.frames.length, "frames");
       // Transform format: Landmark[][] to HandFrameDTO[] {landmarks: Landmark[]}
       const formattedFrames = data.frames.map(landmarks => ({
         landmarks: landmarks
       }));
-      const response = await apiClient.post('/vsl/predict', {
+      
+      // Pass currentText for accent restoration context
+      const payload = {
         frames: formattedFrames,
-        currentText: ""
-      });
+        currentText: data.currentText || ""  // Accumulated text for context
+      };
+      
+      console.log("[API] Sending payload with context:", { frameCount: formattedFrames.length, contextLength: payload.currentText.length });
+      
+      const response = await apiClient.post('/vsl/predict', payload);
       
       console.log("[API] Response:", response.data);
       
@@ -76,6 +90,30 @@ export const recognitionApi = {
     } catch (error: any) {
       console.error("[API] Error recognizing gesture:", error.response?.data || error.message);
       throw error;
+    }
+  },
+
+  // New API: Fix diacritics for complete text (user-triggered, not auto)
+  fixDiacritics: async (rawText: string): Promise<string> => {
+    try {
+      if (!rawText || rawText.trim().length === 0) {
+        return rawText;
+      }
+      
+      console.log("[API] POST /vsl/fix-diacritics with text:", rawText);
+      const response = await apiClient.post<ApiResponse<string>>('/vsl/fix-diacritics', {
+        text: rawText
+      });
+      
+      console.log("[API] Fix diacritics response:", response.data);
+      
+      // Backend returns: {code, message, data: "fixed Vietnamese text"}
+      const fixedText = response.data?.data || response.data?.result || rawText;
+      return fixedText;
+    } catch (error: any) {
+      console.error("[API] Error fixing diacritics:", error.response?.data || error.message);
+      // Fallback: return original text if API fails
+      return rawText;
     }
   }
 };

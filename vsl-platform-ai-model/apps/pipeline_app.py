@@ -7,7 +7,6 @@ import os
 import threading
 import sys
 from PIL import Image, ImageDraw, ImageFont
-from queue import Queue
 
 # --- CẤU HÌNH PATH ---
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -30,11 +29,7 @@ SCALER_PATH = os.path.join(PROJECT_ROOT, 'models', 'scaler.pkl')
 MODEL_PATH = os.path.join(PROJECT_ROOT, 'models', 'model_mlp.pkl')
 
 # --- BIẾN TOÀN CỤC ---
-final_sentence = ""
-processing_queue = Queue(maxsize=10)  # Queue cho async processing để giảm lag
 cached_font_path = None
-worker_thread = None
-should_stop = False
 
 # --- [MỚI] HÀM TỰ ĐỘNG TÌM FONT TIẾNG VIỆT ---
 def find_best_font_path():
@@ -115,38 +110,26 @@ def draw_vn_text(img, text, pos, font_size=30, color=(255, 255, 255)):
     return cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
 
 def process_accent_async(raw_text):
-    """Async worker: liên tục xử lý từ từ hàng đợi, tự động thêm dấu"""
-    global final_sentence
+    """User manually requests diacritics for the complete text"""
     try:
         raw_text_lower = raw_text.lower().strip()
-        if not raw_text_lower or raw_text_lower == " ":
-            final_sentence = raw_text
-            return
+        if not raw_text_lower:
+            print("[DIACRITICS] Empty text, skipping")
+            return None
             
-        print(f"[POST-PROCESSING] Adding accents for: '{raw_text_lower}'")
+        print(f"[DIACRITICS] Processing: '{raw_text_lower}'")
         start_time = time.time()
         
         restored = restore_diacritics(raw_text_lower)
         elapsed = time.time() - start_time
         
-        final_sentence = restored.capitalize()
-        print(f"[POST-PROCESSING] Done in {elapsed:.3f}s: '{restored}'")
+        result = restored.capitalize()
+        print(f"[DIACRITICS] Done in {elapsed:.3f}s: '{result}'")
+        return result
         
     except Exception as e:
-        print(f"[ERROR] Accent processing failed: {e}")
-        final_sentence = raw_text
-
-def diacritics_worker():
-    """Thread worker: nhận từ từ queue và xử lý song song"""
-    global should_stop
-    while not should_stop:
-        try:
-            word = processing_queue.get(timeout=1)
-            if word is None:
-                break
-            process_accent_async(word)
-        except:
-            continue
+        print(f"[ERROR] Diacritics failed: {e}")
+        return None
 
 # --- LOAD MODEL ---
 print("Loading Gesture Model and Scaler...")
@@ -161,12 +144,6 @@ try:
 except Exception as e:
     print(f"Error loading model: {e}")
     exit()
-
-# --- KHỞI ĐỘNG WORKER THREAD ---
-print("Starting diacritics worker thread...")
-worker_thread = threading.Thread(target=diacritics_worker, daemon=True)
-worker_thread.start()
-print("✓ Worker thread started")
 
 # --- SETUP MEDIAPIPE ---
 mp_hands = mp.solutions.hands
@@ -184,10 +161,12 @@ cap = cv2.VideoCapture(0)
 current_sequence_raw = [] 
 last_stable_prediction = None
 stable_start_time = None
-HOLD_DURATION = 1.5
+HOLD_DURATION = 3.0  # Tăng từ 1.5s → 3s để tránh false positives
 CONFIDENCE_THRESHOLD = 0.7
 
 was_hand_present = False 
+space_cooldown = 0  # Cooldown để tránh space bị thêm nhiều lần
+character_just_added = False  # Flag để tránh character bị add 2 lần
 
 # --- MAIN LOOP ---
 WINDOW_NAME = 'Gesture Pipeline'
@@ -230,79 +209,92 @@ while cap.isOpened():
                 scaled_data = scaler.transform(input_data)
                 prediction = model.predict(scaled_data)[0]
                 probabilities = model.predict_proba(scaled_data)[0]
+                max_prob = np.max(probabilities)
                 
-                if np.max(probabilities) >= CONFIDENCE_THRESHOLD:
+                if max_prob >= CONFIDENCE_THRESHOLD:
                     detected_label = str(prediction).lower()
                     
-                    # Hiển thị nhãn đang nhận diện
-                    cv2.putText(image_bgr, f"{detected_label.upper()}: {np.max(probabilities):.2f}", 
+                    # DEBUG: Hiển thị nhãn + confidence
+                    cv2.putText(image_bgr, f"Gesture: {detected_label.upper()} ({max_prob:.2f})", 
                                (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
+                else:
+                    # DEBUG: Hiển thị khi confidence thấp
+                    cv2.putText(image_bgr, f"Low confidence: {max_prob:.2f}", 
+                               (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 100, 255), 1)
+    else:
+        # DEBUG: Khi không có tay
+        if was_hand_present:
+            cv2.putText(image_bgr, "No hand detected", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (100, 100, 255), 1)
 
-    # 2. PHÁT HIỆN BỎ TAY -> THÊM SPACE VÀ TỰ ĐỘNG THÊM DẤU
+    # 2. PHÁT HIỆN BỎ TAY -> THÊM SPACE (với cooldown để tránh multiple spaces)
     if was_hand_present and not is_hand_present:
         if current_sequence_raw and current_sequence_raw[-1] != " ":
             current_sequence_raw.append(" ")
-            
-            # Trích word cuối cùng (từ sau space trước đó)
-            raw_text = "".join(current_sequence_raw)
-            words = raw_text.split()
-            if words and len(words) >= 1:
-                last_word = words[-1]
-                print(f"[AUTO-ACCENT] Processing word: '{last_word}'")
-                
-                # Đưa vào queue để xử lý async (không block main thread)
-                try:
-                    processing_queue.put(last_word, block=False)
-                except:
-                    print("[QUEUE] Full, skipping...")
-            
-            print("[HAND-REMOVED] Added SPACE")
-            cv2.putText(image_bgr, "SPACE + AUTO-ACCENT", (frame_w // 2 - 200, frame_h // 2), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 3)
+            print(f"[HAND-REMOVED] Added SPACE. Current text: {''.join(current_sequence_raw)}")
+            cv2.putText(image_bgr, ">>> SPACE ADDED <<<", (frame_w // 2 - 200, frame_h // 2), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 0), 3)
+        else:
+            print(f"[HAND-REMOVED] No space added (last char is space or empty)")
 
     was_hand_present = is_hand_present
 
-    # 3. LOGIC GIỮ TAY
+    # 3. LOGIC GIỮ TAY (HOLD - cần giữ 3s liên tục cùng gesture)
     if detected_label:
-        if detected_label == last_stable_prediction:
+        if detected_label == last_stable_prediction and not character_just_added:
+            # Tiếp tục giữ cùng gesture
             elapsed = time.time() - stable_start_time
             
+            # Hiển thị progress bar
             bar_w = int((elapsed / HOLD_DURATION) * 200)
-            cv2.rectangle(image_bgr, (10, 60), (10 + bar_w, 70), (0, 255, 0), -1)
+            cv2.rectangle(image_bgr, (10, 70), (10 + 200, 80), (100, 100, 100), -1)
+            cv2.rectangle(image_bgr, (10, 70), (10 + bar_w, 80), (0, 255, 0), -1)
+            cv2.putText(image_bgr, f"Hold: {elapsed:.1f}s / {HOLD_DURATION:.1f}s", 
+                       (220, 75), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 1)
 
             if elapsed >= HOLD_DURATION:
+                # Thêm ký tự (nếu không phải space)
                 if detected_label != " ": 
                     current_sequence_raw.append(detected_label)
+                    print(f"[ADDED] '{detected_label}' | Total: {''.join(current_sequence_raw)}")
+                    character_just_added = True  # Đánh dấu để tránh lặp
                 
+                # RESET để tránh duplicate
                 last_stable_prediction = None 
                 stable_start_time = None
         else:
+            # Thay đổi gesture -> reset timer
+            if last_stable_prediction is not None:
+                print(f"[RESET] Gesture changed from '{last_stable_prediction}' to '{detected_label}'")
             last_stable_prediction = detected_label
             stable_start_time = time.time()
+            character_just_added = False  # Reset flag khi gesture change
     else:
+        # Không phát hiện gesture
+        if last_stable_prediction is not None:
+            print(f"[RESET] No gesture detected (was: {last_stable_prediction})")
         last_stable_prediction = None
+        stable_start_time = None
+        character_just_added = False  # Reset flag
 
     # 4. HIỂN THỊ UI SMOOTH (STREAM LIÊN TỤC, KHÔNG RỜI RẠC)
-    ui_height = 130
+    ui_height = 140
     cv2.rectangle(image_bgr, (0, frame_h - ui_height), (frame_w, frame_h), (20, 20, 20), -1)
 
-    raw_text_combined = "".join(current_sequence_raw).strip()
+    raw_text_combined = "".join(current_sequence_raw)
     if raw_text_combined:
-        raw_text_display = raw_text_combined[0].upper() + raw_text_combined[1:]
+        raw_text_display = raw_text_combined[0].upper() + raw_text_combined[1:] if len(raw_text_combined) > 1 else raw_text_combined[0].upper()
     else:
         raw_text_display = ""
         
     # Dòng Raw (không dấu, thời gian thực)
-    image_bgr = draw_vn_text(image_bgr, f"Raw:   {raw_text_display}", (20, frame_h - 80), font_size=32, color=(150, 150, 255))
+    image_bgr = draw_vn_text(image_bgr, f"OUTPUT: {raw_text_display}", (20, frame_h - 80), font_size=32, color=(0, 255, 0))
 
-    # Dòng Final (có dấu, được cập nhật liên tục từ worker thread)
-    final_display = f"Final: {final_sentence}" if final_sentence else "Final: Waiting..."
-    color = (0, 255, 0) if final_sentence else (150, 150, 150)
-    
-    image_bgr = draw_vn_text(image_bgr, final_display, (20, frame_h - 40), font_size=32, color=color)
+    # Hiển thị thông tin hold duration
+    info_text = f"HOLD_TIME: {HOLD_DURATION}s | CONF_THRESHOLD: {CONFIDENCE_THRESHOLD}"
+    cv2.putText(image_bgr, info_text, (10, frame_h - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (150, 150, 255), 1)
 
     # Hướng dẫn
-    guide_text = "'f': Manual Fix | 'c': Clear | 'q': Quit | AUTO-ACCENT: ON"
+    guide_text = "'f': Add Diacritics | 'c': Clear | 'q': Quit | HOLD_TIME: 3.0s"
     cv2.putText(image_bgr, guide_text, (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100, 255, 100), 1)
 
     cv2.imshow(WINDOW_NAME, image_bgr)
@@ -312,31 +304,21 @@ while cap.isOpened():
         break
     elif key == ord('c'):
         current_sequence_raw = []
-        final_sentence = ""
-        # Clear queue
-        while not processing_queue.empty():
-            try:
-                processing_queue.get_nowait()
-            except:
-                break
         print("[CLEAR] Reset all")
     elif key == ord('f'):
-        # Manual accent fixing (fallback)
+        # Manual diacritics fixing when user presses 'f'
         if current_sequence_raw:
-            input_sentence = "".join(current_sequence_raw)
-            try:
-                processing_queue.put(input_sentence, block=False)
-                print(f"[MANUAL] Queued: '{input_sentence}'")
-            except:
-                print("[ERROR] Queue full")
+            input_sentence = "".join(current_sequence_raw).strip()
+            result = process_accent_async(input_sentence)
+            if result:
+                print(f"[RESULT] Fixed: {result}")
+                cv2.putText(image_bgr, f"FIXED: {result}", (10, frame_h // 2), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 0), 3)
+        else:
+            print("[ERROR] No text to fix")
 
 # --- CLEANUP ---
 print("Shutting down...")
-should_stop = True
-processing_queue.put(None)  # Signal worker to stop
-if worker_thread:
-    worker_thread.join(timeout=2)
-
 cap.release()
 cv2.destroyAllWindows()
 hands.close()

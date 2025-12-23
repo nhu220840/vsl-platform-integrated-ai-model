@@ -111,6 +111,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/spelling/**").permitAll()
                 .requestMatchers("/api/v1/dictionary/search/**").permitAll()
                 .requestMatchers("/api/v1/dictionary/detail/**").permitAll()
+                .requestMatchers("/api/vsl/**").permitAll() // VSL gesture recognition endpoints
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 
                 // --- PRIVATE ENDPOINTS ---
