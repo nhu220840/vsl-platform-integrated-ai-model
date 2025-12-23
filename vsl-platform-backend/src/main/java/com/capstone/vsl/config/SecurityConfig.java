@@ -102,25 +102,23 @@ public class SecurityConfig {
             
             .authorizeHttpRequests(auth -> auth
                 // --- [QUAN TRỌNG] FIX LỖI CORS ---
-                // Cho phép tất cả request OPTIONS (Pre-flight) đi qua mà không cần check quyền
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
-                // --- PUBLIC ENDPOINTS ---
-                .requestMatchers("/api/v1/auth/**").permitAll()
-                .requestMatchers("/api/v1/recognition/**").permitAll() // AI Model
-                .requestMatchers("/api/v1/spelling/**").permitAll()
-                .requestMatchers("/api/v1/dictionary/search/**").permitAll()
-                .requestMatchers("/api/v1/dictionary/detail/**").permitAll()
-                .requestMatchers("/api/auth/**").permitAll() // Auth endpoints
-                .requestMatchers("/api/dictionary/**").permitAll() // Dictionary search (public)
+            
+                // --- PUBLIC ENDPOINTS (Xóa /v1 để khớp với Controller) ---
+                .requestMatchers("/api/auth/**").permitAll()                 // Đã sửa
+                .requestMatchers("/api/recognition/**").permitAll()          // Đã sửa
+                .requestMatchers("/api/spelling/**").permitAll()             // Đã sửa
+                .requestMatchers("/api/dictionary/search/**").permitAll()    // QUAN TRỌNG: Sửa dòng này để Healthcheck qua được
+                .requestMatchers("/api/dictionary/detail/**").permitAll()    // Đã sửa
                 .requestMatchers("/api/vsl/**").permitAll() // VSL gesture recognition endpoints
+
+                
+                // Swagger UI
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 
                 // --- PRIVATE ENDPOINTS ---
-                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/v1/user/**").hasAnyRole("USER", "ADMIN")
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN")
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")           // Đã sửa
+                .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN") // Đã sửa
                 
                 // --- MẶC ĐỊNH ---
                 .anyRequest().authenticated()
