@@ -73,7 +73,7 @@ export const recognitionApi = {
       
       console.log("[API] Sending payload with context:", { frameCount: formattedFrames.length, contextLength: payload.currentText.length });
       
-      const response = await apiClient.post('/vsl/predict', payload);
+      const response = await apiClient.post<ApiResponse<string>>('/vsl/predict', payload);
       
       console.log("[API] Response:", response.data);
       
