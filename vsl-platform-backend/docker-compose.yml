@@ -108,7 +108,7 @@ services:
       SPRING_ELASTICSEARCH_SOCKET_TIMEOUT: 60s
 
       # AI Service Configuration (Container-to-Container)
-      AI_SERVICE_URL: http://ai-service:5000/predict
+      AI_SERVICE_URL: http://ai-service:5000
       AI_SERVICE_TIMEOUT: 10000
 
       # JWT Configuration

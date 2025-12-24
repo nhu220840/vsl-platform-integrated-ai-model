@@ -74,7 +74,7 @@ public class GestureIntegrationService {
             log.debug("Calling unified AI service with {} frames", frameCount);
 
             ResponseEntity<AiResponseDTO> response = aiRestClient.post()
-                    .uri("")
+                    .uri("/predict")
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(requestBody)
                     .retrieve()
