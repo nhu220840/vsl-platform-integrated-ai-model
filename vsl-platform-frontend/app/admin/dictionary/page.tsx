@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { 
   Terminal, 
   LayoutDashboard, 
@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import styles from "../../../styles/admin-dictionary.module.css";
 import { adminApi, DictionaryDTO } from "@/lib/admin-api-client";
+import { useAuthStore } from "@/stores/auth-store";
 
 interface DictionaryItem {
   id: number;
@@ -50,6 +51,8 @@ const mapDictionaryDTOToItem = (dto: DictionaryDTO): DictionaryItem => {
 
 export default function AdminDictionaryPage() {
   const pathname = usePathname();
+  const router = useRouter();
+  const logout = useAuthStore((state) => state.logout);
 
   // Logic đồng hồ và Admin Name
   const [currentDateTime, setCurrentDateTime] = useState<string>("");
@@ -104,6 +107,18 @@ export default function AdminDictionaryPage() {
     { label: "[CONTRIBUTIONS]", href: "/admin/contributions", icon: FileText },
     { label: "[DICTIONARY_DB]", href: "/admin/dictionary", icon: BookOpen },
   ];
+
+  // #region agent log
+  const handleLogout = () => {
+    fetch('http://127.0.0.1:7242/ingest/fac30a44-515e-493f-a148-2c304048b02d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'admin/dictionary/page.tsx:handleLogout',message:'Logout button clicked',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion agent log
+    logout();
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fac30a44-515e-493f-a148-2c304048b02d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'admin/dictionary/page.tsx:handleLogout',message:'Redirecting to login',data:{targetPath:'/login'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion agent log
+    router.push("/login");
+  };
+  // #endregion agent log
 
   const filteredWords = words.filter((item) =>
     item.word.toLowerCase().includes(searchTerm.toLowerCase())
@@ -223,7 +238,11 @@ export default function AdminDictionaryPage() {
             );
           })}
           <li>
-            <div className={styles["menu-item"]} style={{cursor: 'pointer'}}>
+            <div 
+              className={styles["menu-item"]} 
+              style={{cursor: 'pointer'}}
+              onClick={handleLogout}
+            >
                <span className={styles["icon-wrapper"]}><LogOut size={16}/></span>
                <span>[LOGOUT]</span>
             </div>

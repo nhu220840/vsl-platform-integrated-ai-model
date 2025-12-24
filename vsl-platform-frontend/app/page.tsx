@@ -258,7 +258,12 @@ export default function LandingPage() {
         <div className="glitch" data-text="BẮT ĐẦU">
           <button
             className="start-button"
-            onClick={() => router.push("/user/dashboard")}
+            onClick={() => {
+              // #region agent log
+              fetch('http://127.0.0.1:7242/ingest/fac30a44-515e-493f-a148-2c304048b02d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/page.tsx:start-button',message:'Bắt đầu button clicked',data:{targetPath:'/login',timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+              // #endregion agent log
+              router.push("/login");
+            }}
           >
             BẮT ĐẦU
           </button>

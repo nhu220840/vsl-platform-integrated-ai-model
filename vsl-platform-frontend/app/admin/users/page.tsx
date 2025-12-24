@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { 
   Terminal, LayoutDashboard, Users, FileText, BookOpen, LogOut, Lock, 
   Plus, Edit, Trash2, Search, X, Save, Shield, UserCheck, Activity, 
@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import styles from "../../../styles/admin-users.module.css";
 import { adminApi, UserDTO } from "@/lib/admin-api-client";
+import { useAuthStore } from "@/stores/auth-store";
 
 // Interface để map từ UserDTO sang User (cho UI)
 interface User {
@@ -49,6 +50,8 @@ const mapUserDTOToUser = (dto: UserDTO): User => {
 
 export default function AdminUsersPage() {
   const pathname = usePathname();
+  const router = useRouter();
+  const logout = useAuthStore((state) => state.logout);
   const [currentDateTime, setCurrentDateTime] = useState<string>("");
   const adminName = "SHERRY";
 
@@ -113,6 +116,18 @@ export default function AdminUsersPage() {
     { label: "[CONTRIBUTIONS]", href: "/admin/contributions", icon: FileText },
     { label: "[DICTIONARY_DB]", href: "/admin/dictionary", icon: BookOpen },
   ];
+
+  // #region agent log
+  const handleLogout = () => {
+    fetch('http://127.0.0.1:7242/ingest/fac30a44-515e-493f-a148-2c304048b02d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'admin/users/page.tsx:handleLogout',message:'Logout button clicked',data:{timestamp:Date.now()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion agent log
+    logout();
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/fac30a44-515e-493f-a148-2c304048b02d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'admin/users/page.tsx:handleLogout',message:'Redirecting to login',data:{targetPath:'/login'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion agent log
+    router.push("/login");
+  };
+  // #endregion agent log
 
   // --- Logic Handlers ---
 
@@ -291,7 +306,11 @@ export default function AdminUsersPage() {
             );
           })}
           <li>
-            <div className={styles["menu-item"]} style={{cursor: 'pointer'}}>
+            <div 
+              className={styles["menu-item"]} 
+              style={{cursor: 'pointer'}}
+              onClick={handleLogout}
+            >
                <span className={styles["icon-wrapper"]}><LogOut size={16}/></span>
                <span>[LOGOUT]</span>
             </div>
