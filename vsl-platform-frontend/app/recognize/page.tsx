@@ -31,6 +31,10 @@ export default function GestureRecognitionPage() {
   const [historyLog, setHistoryLog] = useState<string[]>([]); // Lưu lịch sử nhận diện
   const [outputText, setOutputText] = useState(""); // Lưu văn bản đầu ra để user có thể xóa
   const [fixedText, setFixedText] = useState(""); // Kết quả sau khi fix diacritics
+  const [isFixingText, setIsFixingText] = useState(false); // Flag để track khi đang fix text
+  
+  // Ref để debounce fix text
+  const fixTextTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // State cho hold logic (ngăn duplicate character)
   const lastPredictionRef = useRef<string | null>(null);
@@ -89,9 +93,16 @@ export default function GestureRecognitionPage() {
                 
                 if (holdCountRef.current >= HOLD_REQUIRED_BATCHES) {
                   // Đã giữ đủ lâu → thêm character
-                  setOutputText(prev => prev + letter);
+                  const newText = outputText + letter;
+                  setOutputText(newText);
                   console.log(`[✓ ADDED] Character '${letter}' after holding ${HOLD_REQUIRED_BATCHES} batches`);
                   setHistoryLog(prev => [`[${new Date().toLocaleTimeString()}] ✓ ADDED: ${letter}`, ...prev.slice(0, 9)]);
+                  
+                  // #region agent log
+                  fetch('http://127.0.0.1:7242/ingest/fac30a44-515e-493f-a148-2c304048b02d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'recognize/page.tsx:processBatch',message:'Character added, outputText will trigger auto-fix via useEffect',data:{newText:newText,letter:letter},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+                  // #endregion agent log
+                  
+                  // useEffect sẽ tự động gọi autoFixDiacritics khi outputText thay đổi
                   
                   // Reset hold state HOÀN TOÀN
                   lastPredictionRef.current = null;
@@ -156,6 +167,103 @@ export default function GestureRecognitionPage() {
 
   // Format thời gian
   const formatTime = (s: number) => new Date(s * 1000).toISOString().substr(14, 5);
+
+  // State để lưu thông báo lỗi
+  const [fixError, setFixError] = useState<string | null>(null);
+
+  // Hàm tự động gọi model 2 để fix diacritics với debounce
+  const autoFixDiacritics = useCallback((text: string) => {
+    // Xóa timeout cũ nếu có (debounce)
+    if (fixTextTimeoutRef.current) {
+      clearTimeout(fixTextTimeoutRef.current);
+    }
+    
+    // Chỉ fix nếu có text
+    if (!text || text.trim().length === 0) {
+      setFixedText("");
+      setFixError(null);
+      return;
+    }
+    
+    // Debounce: chờ 500ms sau khi text thay đổi để tránh gọi quá nhiều lần
+    fixTextTimeoutRef.current = setTimeout(async () => {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fac30a44-515e-493f-a148-2c304048b02d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'recognize/page.tsx:autoFixDiacritics',message:'Starting auto-fix diacritics',data:{text:text,length:text.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion agent log
+      
+      setIsFixingText(true);
+      setFixError(null); // Clear previous error
+      try {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/fac30a44-515e-493f-a148-2c304048b02d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'recognize/page.tsx:autoFixDiacritics',message:'Before API call',data:{text:text,textLength:text.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B1'})}).catch(()=>{});
+        // #endregion agent log
+        
+        const fixed = await recognitionApi.fixDiacritics(text);
+        
+        // Kiểm tra nếu fixed text giống với original (có thể là do API fail và return original)
+        if (fixed === text) {
+          // Có thể API đã fail và return original text, nhưng không có error
+          // Trong trường hợp này, chúng ta vẫn hiển thị text gốc
+          setFixedText(text);
+          setFixError(null);
+        } else {
+          // Format lại: capitalize từng từ để giữ format đẹp (vì API trả về lowercase)
+          const formattedFixed = fixed && fixed.length > 0 
+            ? fixed.split(' ').map(word => 
+                word.length > 0 ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : word
+              ).join(' ')
+            : fixed;
+          
+          setFixedText(formattedFixed);
+          setFixError(null);
+          console.log(`[AUTO-FIX] "${text}" → "${fixed}" → "${formattedFixed}"`);
+        }
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/fac30a44-515e-493f-a148-2c304048b02d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'recognize/page.tsx:autoFixDiacritics',message:'Auto-fix diacritics successful',data:{original:text,fixed:fixed,isDifferent:fixed!==text},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion agent log
+      } catch (error: any) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/fac30a44-515e-493f-a148-2c304048b02d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'recognize/page.tsx:autoFixDiacritics',message:'Auto-fix diacritics failed',data:{error:error.message,text:text},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion agent log
+        
+        const status = error.response?.status;
+        let errorMsg = "Không thể kết nối đến dịch vụ AI";
+        
+        if (status === 502) {
+          errorMsg = "Lỗi: Python AI service không khả dụng. Vui lòng kiểm tra service đang chạy trên port 5000.";
+        } else if (status === 503) {
+          errorMsg = "Dịch vụ AI tạm thời không khả dụng";
+        } else if (status === 400) {
+          errorMsg = "Dữ liệu không hợp lệ";
+        }
+        
+        console.error("[AUTO-FIX] Error:", error);
+        setFixError(errorMsg);
+        // Hiển thị text gốc nếu lỗi
+        setFixedText(text);
+      } finally {
+        setIsFixingText(false);
+      }
+    }, 500); // Debounce 500ms
+  }, []);
+  
+  // Effect để tự động fix text khi outputText thay đổi (trường hợp khác như DELETE, CLEAR ALL)
+  useEffect(() => {
+    if (outputText.length > 0) {
+      autoFixDiacritics(outputText);
+    } else {
+      setFixedText("");
+      setFixError(null);
+    }
+    
+    // Cleanup timeout khi component unmount hoặc outputText thay đổi
+    return () => {
+      if (fixTextTimeoutRef.current) {
+        clearTimeout(fixTextTimeoutRef.current);
+      }
+    };
+  }, [outputText, autoFixDiacritics]);
 
   return (
     <div className={styles.container}>
@@ -262,7 +370,7 @@ export default function GestureRecognitionPage() {
                   border: '1px solid #ffaa00',
                   padding: '8px',
                   borderRadius: '3px',
-                  fontFamily: 'monospace',
+                  fontFamily: "'Roboto', 'DejaVu Sans', 'Ubuntu', 'Arial', 'Liberation Sans', sans-serif",
                   fontSize: '12px',
                   color: '#ffaa00',
                   wordBreak: 'break-word',
@@ -281,18 +389,18 @@ export default function GestureRecognitionPage() {
               </div>
               <div style={{
                   background: '#0a2a0a',
-                  border: '1px solid #00ff00',
+                  border: fixError ? '1px solid #ff3333' : '1px solid #00ff00',
                   padding: '8px',
                   borderRadius: '3px',
-                  fontFamily: 'monospace',
+                  fontFamily: "'Roboto', 'DejaVu Sans', 'Ubuntu', 'Arial', 'Liberation Sans', sans-serif",
                   fontSize: '12px',
-                  color: '#00ff00',
+                  color: isFixingText ? '#ffaa00' : (fixError ? '#ff6666' : '#00ff00'),
                   wordBreak: 'break-word',
                   maxHeight: '60px',
                   overflowY: 'auto',
                   minHeight: '35px'
               }}>
-                {fixedText || '(bấm FIX TEXT)'}
+                {isFixingText ? '⏳ Fixing...' : (fixError ? `⚠️ ${fixError}` : (fixedText || '(tự động fix sau khi thêm ký tự)'))}
               </div>
             </div>
 
@@ -345,25 +453,57 @@ export default function GestureRecognitionPage() {
             <i className="fas fa-long-arrow-alt-right"></i> SPACE
           </button>
 
-          {/* FIX DIACRITICS */}
+          {/* FIX DIACRITICS (Manual trigger - vẫn giữ để user có thể fix lại nếu cần) */}
           <button 
             className={styles["tactical-btn"]} 
             style={{ background: outputText.length > 0 ? '#00aa00' : '#333333', opacity: outputText.length > 0 ? 1 : 0.5 }}
-            disabled={outputText.length === 0}
+            disabled={outputText.length === 0 || isFixingText}
             onClick={() => {
+              // #region agent log
+              fetch('http://127.0.0.1:7242/ingest/fac30a44-515e-493f-a148-2c304048b02d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'recognize/page.tsx:FIX_TEXT_button',message:'Manual fix diacritics triggered',data:{text:outputText},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+              // #endregion agent log
+              
               // Call backend to fix diacritics for the entire text
-              console.log(`[FIX-DIACRITICS] Processing: "${outputText}"`);
-              setFixedText("Fixing...");
+              console.log(`[FIX-DIACRITICS] Manual fix: "${outputText}"`);
+              setIsFixingText(true);
+              setFixError(null);
               recognitionApi.fixDiacritics(outputText).then(result => {
-                setFixedText(result);
-                console.log(`[FIX-DIACRITICS] Result: "${result}"`);
+                // Kiểm tra nếu result giống với original (có thể API fail)
+                if (result === outputText) {
+                  setFixedText(outputText);
+                  setFixError("Không thể fix dấu. Vui lòng kiểm tra AI service.");
+                } else {
+                  // Format lại: capitalize từng từ để giữ format đẹp
+                  const formattedResult = result && result.length > 0 
+                    ? result.split(' ').map(word => 
+                        word.length > 0 ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : word
+                      ).join(' ')
+                    : result;
+                  setFixedText(formattedResult);
+                  setFixError(null);
+                  console.log(`[FIX-DIACRITICS] Result: "${result}" → "${formattedResult}"`);
+                }
               }).catch(err => {
+                const status = err.response?.status;
+                let errorMsg = "Không thể kết nối đến dịch vụ AI";
+                
+                if (status === 502) {
+                  errorMsg = "Lỗi 502: Python AI service không khả dụng. Vui lòng kiểm tra service đang chạy trên port 5000.";
+                } else if (status === 503) {
+                  errorMsg = "Dịch vụ AI tạm thời không khả dụng";
+                } else if (status === 400) {
+                  errorMsg = "Dữ liệu không hợp lệ";
+                }
+                
                 console.error("[FIX-DIACRITICS] Error:", err);
-                setFixedText("Error fixing diacritics");
+                setFixError(errorMsg);
+                setFixedText(outputText); // Hiển thị text gốc nếu lỗi
+              }).finally(() => {
+                setIsFixingText(false);
               });
             }}
           >
-            <i className="fas fa-check"></i> FIX TEXT
+            <i className="fas fa-check"></i> {isFixingText ? "FIXING..." : "FIX TEXT"}
           </button>
           
           {/* DELETE BUTTON */}
@@ -387,6 +527,7 @@ export default function GestureRecognitionPage() {
             onClick={() => {
               setOutputText("");
               setFixedText("");
+              setFixError(null);
               console.log("[CLEAR] All text cleared");
             }}
           >
@@ -406,7 +547,7 @@ export default function GestureRecognitionPage() {
         padding: '15px 25px',
         borderRadius: '5px',
         fontSize: '18px',
-        fontFamily: 'monospace',
+        fontFamily: "'Roboto', 'DejaVu Sans', 'Ubuntu', 'Arial', 'Liberation Sans', sans-serif",
         color: '#00ff00',
         textShadow: '0 0 10px rgba(0, 255, 0, 0.8)',
         maxWidth: '80%',
@@ -415,8 +556,8 @@ export default function GestureRecognitionPage() {
       }}>
         <div><strong>RAW:</strong> {outputText || <span style={{ opacity: 0.5 }}>Waiting for recognition...</span>}</div>
         {fixedText && (
-          <div style={{ marginTop: '8px', color: '#ffdd00', borderTop: '1px solid #ffdd00', paddingTop: '8px' }}>
-            <strong>FIXED:</strong> {fixedText === "Fixing..." ? "Processing..." : fixedText}
+          <div style={{ marginTop: '8px', color: fixError ? '#ff6666' : '#ffdd00', borderTop: `1px solid ${fixError ? '#ff6666' : '#ffdd00'}`, paddingTop: '8px' }}>
+            <strong>FIXED:</strong> {isFixingText ? "Processing..." : (fixError ? `⚠️ ${fixError}` : fixedText)}
           </div>
         )}
       </div>

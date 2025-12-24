@@ -106,13 +106,39 @@ export const recognitionApi = {
       });
       
       console.log("[API] Fix diacritics response:", response.data);
+      console.log("[API] Full response object:", JSON.stringify(response.data, null, 2));
       
       // Backend returns: {code, message, data: "fixed Vietnamese text"}
       const fixedText = response.data?.data || response.data?.result || rawText;
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/fac30a44-515e-493f-a148-2c304048b02d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api-client.ts:fixDiacritics',message:'API response received',data:{rawText:rawText,fixedText:fixedText,responseCode:response.data?.code,hasData:!!response.data?.data,responseData:response.data?.data,fullResponse:JSON.stringify(response.data)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+      // #endregion agent log
+      
+      console.log("[API] Extracted fixedText:", fixedText, "| Original:", rawText, "| Are they equal?", fixedText === rawText);
+      
       return fixedText;
     } catch (error: any) {
-      console.error("[API] Error fixing diacritics:", error.response?.data || error.message);
+      const status = error.response?.status;
+      const errorMessage = error.response?.data?.message || error.message;
+      
+      console.error("[API] Error fixing diacritics:", {
+        status,
+        message: errorMessage,
+        fullError: error.response?.data || error.message
+      });
+      
+      // Provide specific error messages based on status code
+      if (status === 502) {
+        console.warn("[API] Bad Gateway (502): Python AI service may be offline. Please check if the AI service is running on port 5000.");
+      } else if (status === 503) {
+        console.warn("[API] Service Unavailable (503): AI service is temporarily unavailable.");
+      } else if (status === 400) {
+        console.warn("[API] Bad Request (400): Invalid input sent to API.");
+      }
+      
       // Fallback: return original text if API fails
+      // This allows the UI to continue working even if diacritics fixing fails
       return rawText;
     }
   }

@@ -6,10 +6,16 @@ Processes hand landmarks (coordinates) and restores Vietnamese accents
 import os
 import numpy as np
 import joblib
+import traceback
+import logging
 from collections import Counter
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from src.utils.vn_accent_restore import restore_diacritics
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger(__name__)
 
 # --- CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -320,16 +326,38 @@ def fix_diacritics():
                 'error': '"text" cannot be empty'
             }), 400
         
-        # Restore diacritics
-        fixed_text = restore_diacritics(raw_text.lower().strip())
-        
-        return jsonify({
-            'success': True,
-            'fixed_text': fixed_text,
-            'original_text': raw_text
-        }), 200
+        # Restore diacritics with better error handling
+        try:
+            fixed_text = restore_diacritics(raw_text.lower().strip())
+            
+            # Validate that fixed_text is not None or empty
+            if not fixed_text or not fixed_text.strip():
+                log.warning(f"restore_diacritics returned empty result for: '{raw_text}'")
+                # Return original text if restoration failed
+                fixed_text = raw_text
+            
+            return jsonify({
+                'success': True,
+                'fixed_text': fixed_text,
+                'original_text': raw_text
+            }), 200
+        except Exception as restore_error:
+            # Log the error for debugging
+            error_trace = traceback.format_exc()
+            log.error(f"Error in restore_diacritics for text '{raw_text}': {str(restore_error)}\n{error_trace}")
+            
+            # Return JSON error response instead of letting Flask return HTML
+            return jsonify({
+                'success': False,
+                'error': f'Failed to restore diacritics: {str(restore_error)}',
+                'original_text': raw_text
+            }), 500
     
     except Exception as e:
+        # Log full traceback for debugging
+        error_trace = traceback.format_exc()
+        log.error(f"Unexpected error in fix_diacritics endpoint: {str(e)}\n{error_trace}")
+        
         return jsonify({
             'success': False,
             'error': f'Internal server error: {str(e)}'
