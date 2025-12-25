@@ -57,10 +57,11 @@ export default function AdminContributionsPage() {
   const pathname = usePathname();
   const router = useRouter();
   const logout = useAuthStore((state) => state.logout);
+  const { username } = useAuthStore();
   
   // Logic đồng hồ và tên Admin
   const [currentDateTime, setCurrentDateTime] = useState<string>("");
-  const adminName = "SHERRY";
+  const adminName = username?.toUpperCase() || "ADMIN";
 
   // State cho contributions từ API
   const [contributions, setContributions] = useState<Contribution[]>([]);

@@ -118,11 +118,11 @@
   display: inline-block;
 }
 
-/* Main Content - Đã chỉnh sửa padding sát sidebar */
+/* Main Content */
 .main-content {
-  margin-left: 20px;
-  margin-top: 55px;
-  padding: 15px 20px; /* Padding nhỏ hơn để nội dung sát sidebar hơn */
+  margin-left: 250px;
+  margin-top: 40px;
+  padding: 30px;
   min-height: calc(100vh - 40px);
   background: linear-gradient(135deg, #050505 0%, #0a0a0a 100%);
 }

@@ -23,10 +23,11 @@ export default function AdminDashboard() {
   const pathname = usePathname();
   const router = useRouter();
   const logout = useAuthStore((state) => state.logout);
+  const { username } = useAuthStore();
   
   // State cho đồng hồ
   const [currentDateTime, setCurrentDateTime] = useState<string>("");
-  const adminName = "SHERRY"; // Tên Admin (sau này có thể lấy từ context/API)
+  const adminName = username?.toUpperCase() || "ADMIN"; // Lấy tên từ auth store
   
   // State cho stats từ API
   const [stats, setStats] = useState({

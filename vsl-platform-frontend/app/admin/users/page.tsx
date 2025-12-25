@@ -52,8 +52,9 @@ export default function AdminUsersPage() {
   const pathname = usePathname();
   const router = useRouter();
   const logout = useAuthStore((state) => state.logout);
+  const { username } = useAuthStore();
   const [currentDateTime, setCurrentDateTime] = useState<string>("");
-  const adminName = "SHERRY";
+  const adminName = username?.toUpperCase() || "ADMIN";
 
   // State cho users từ API
   const [users, setUsers] = useState<User[]>([]);

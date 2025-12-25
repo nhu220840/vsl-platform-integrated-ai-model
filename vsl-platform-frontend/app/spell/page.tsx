@@ -6,12 +6,14 @@ import {
   ArrowLeft, Terminal, User, Play
 } from "lucide-react";
 import styles from "../../styles/spell.module.css";
-import apiClient from "../../lib/api-client"; // Đảm bảo import đúng đường dẫn
+import apiClient from "../../lib/api-client";
+import { useAuthStore } from "@/stores/auth-store";
 
 export default function SpellingPage() {
   const [inputText, setInputText] = useState("");
   const [gestureData, setGestureData] = useState<{char: string, url: string}[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const { username, isAuthenticated, isGuest } = useAuthStore();
   
   // State cho Status Bar
   const [currentDateTime, setCurrentDateTime] = useState<string>("");
@@ -29,26 +31,45 @@ export default function SpellingPage() {
     updateTime();
     const timer = setInterval(updateTime, 1000);
 
-    // Get User Info từ DB
+    // Get User Info: Ưu tiên từ auth store, nếu không có thì gọi API
     const fetchUser = async () => {
-      try {
-        // Gọi API lấy thông tin user đang login
-        // apiClient đã cấu hình interceptor trả về response.data, 
-        // nhưng tùy cấu hình của bạn, hãy kiểm tra kỹ
-        const res: any = await apiClient.get("/users/me");
-        
-        // Ưu tiên hiển thị FullName, nếu không có thì Username
-        const name = res.fullName || res.username || "UNKNOWN_USER";
-        setUserName(name);
-      } catch (error) {
-        console.error("Failed to fetch user:", error);
+      // Nếu là guest mode, hiển thị GUEST_MODE
+      if (isGuest) {
         setUserName("GUEST_MODE");
+        return;
+      }
+
+      // Nếu đã có username trong auth store, dùng nó
+      if (username) {
+        setUserName(username);
+        
+        // Vẫn thử gọi API để lấy fullName nếu có
+        if (isAuthenticated) {
+          try {
+            const res: any = await apiClient.get("/users/me");
+            const name = res.fullName || res.username || username;
+            setUserName(name);
+          } catch (error) {
+            // Nếu API fail, vẫn dùng username từ store
+            console.error("Failed to fetch user details:", error);
+          }
+        }
+      } else {
+        // Nếu không có username trong store, thử gọi API
+        try {
+          const res: any = await apiClient.get("/users/me");
+          const name = res.fullName || res.username || "UNKNOWN_USER";
+          setUserName(name);
+        } catch (error) {
+          console.error("Failed to fetch user:", error);
+          setUserName("GUEST_MODE");
+        }
       }
     };
     fetchUser();
 
     return () => clearInterval(timer);
-  }, []);
+  }, [username, isAuthenticated, isGuest]);
 
   // --- 2. Hàm bỏ dấu tiếng Việt ---
   const removeAccents = (str: string) => {

@@ -76,8 +76,8 @@
 
 /* --- MAIN CONTENT (Logic của Dictionary) --- */
 .main-content {
-  margin-left: 10px; /* Đẩy nội dung sang phải để nhường chỗ cho Sidebar */
-  margin-top: 40px;   /* Đẩy xuống dưới thanh Status bar */
+  margin-left: 250px;
+  margin-top: 40px;
   padding: 30px;
   min-height: calc(100vh - 40px);
   background: linear-gradient(135deg, #050505 0%, #0a0a0a 100%);

@@ -53,10 +53,11 @@ export default function AdminDictionaryPage() {
   const pathname = usePathname();
   const router = useRouter();
   const logout = useAuthStore((state) => state.logout);
+  const { username } = useAuthStore();
 
   // Logic đồng hồ và Admin Name
   const [currentDateTime, setCurrentDateTime] = useState<string>("");
-  const adminName = "SHERRY";
+  const adminName = username?.toUpperCase() || "ADMIN";
 
   // State cho dictionary từ API
   const [words, setWords] = useState<DictionaryItem[]>([]);

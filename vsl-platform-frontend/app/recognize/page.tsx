@@ -348,11 +348,6 @@ export default function GestureRecognitionPage() {
              <canvas ref={canvasRef} className={styles["output-canvas"]} />
           </div>
           
-          <div className={styles["target-reticle"]}>
-            <div className={styles["corner-top-right"]}></div>
-            <div className={styles["corner-bottom-left"]}></div>
-          </div>
-
           {/* KẾT QUẢ HIỆN TO GIỮA MÀN HÌNH - SMOOTH ANIMATION */}
           <div className={styles["result-display"]}>
               <div className={styles["result-text"]} 
