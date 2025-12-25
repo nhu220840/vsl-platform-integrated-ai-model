@@ -22,7 +22,7 @@ interface User {
   address: string;
   phoneNumber?: string;
   bio?: string;
-  role: "ADMIN" | "USER" | "MODERATOR";
+  role: "ADMIN" | "USER";
   status: "ACTIVE" | "INACTIVE" | "BANNED";
   lastLogin: string;
   joinDate: string;
@@ -40,7 +40,7 @@ const mapUserDTOToUser = (dto: UserDTO): User => {
     address: dto.address || "",
     phoneNumber: dto.phoneNumber || undefined,
     bio: dto.bio || undefined,
-    role: (dto.role as "ADMIN" | "USER" | "MODERATOR") || "USER",
+    role: (dto.role as "ADMIN" | "USER") || "USER",
     status: "ACTIVE", // Backend không có status field, mặc định ACTIVE
     lastLogin: "Never", // Backend không có lastLogin, có thể thêm sau
     joinDate: dto.createdAt ? new Date(dto.createdAt).toLocaleDateString('en-GB') : "",
@@ -344,7 +344,7 @@ export default function AdminUsersPage() {
         <div className={styles["stats-container"]}>
           <div className={styles["stat-card"]}><div className={styles["stat-icon"]}><Users /></div><div className={styles["stat-info"]}><span className={styles["stat-value"]}>{loading ? "..." : totalElements}</span><span className={styles["stat-label"]}>TOTAL USERS</span></div></div>
           <div className={styles["stat-card"]}><div className={styles["stat-icon"]}><UserCheck /></div><div className={styles["stat-info"]}><span className={styles["stat-value"]}>{loading ? "..." : users.filter(u=>u.status==='ACTIVE').length}</span><span className={styles["stat-label"]}>ACTIVE NOW</span></div></div>
-          <div className={styles["stat-card"]}><div className={styles["stat-icon"]}><Shield /></div><div className={styles["stat-info"]}><span className={styles["stat-value"]}>{loading ? "..." : users.filter(u=>u.role==='ADMIN'||u.role==='MODERATOR').length}</span><span className={styles["stat-label"]}>ADMINS</span></div></div>
+          <div className={styles["stat-card"]}><div className={styles["stat-icon"]}><Shield /></div><div className={styles["stat-info"]}><span className={styles["stat-value"]}>{loading ? "..." : users.filter(u=>u.role==='ADMIN').length}</span><span className={styles["stat-label"]}>ADMINS</span></div></div>
           <div className={styles["stat-card"]}><div className={styles["stat-icon"]}><Activity /></div><div className={styles["stat-info"]}><span className={styles["stat-value"]}>98%</span><span className={styles["stat-label"]}>RETENTION</span></div></div>
         </div>
 
@@ -572,7 +572,6 @@ export default function AdminUsersPage() {
                     >
                         <option value="USER">USER</option>
                         <option value="ADMIN">ADMIN</option>
-                        <option value="MODERATOR">MODERATOR</option>
                     </select>
                   </div>
               </div>
