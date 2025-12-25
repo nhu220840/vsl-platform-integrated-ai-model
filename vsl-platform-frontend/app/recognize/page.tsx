@@ -265,6 +265,51 @@ export default function GestureRecognitionPage() {
     };
   }, [outputText, autoFixDiacritics]);
 
+  // --- LOGIC 4: Keyboard shortcuts ---
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Chỉ xử lý khi không đang focus vào input/textarea
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      // Space key → add space
+      if (e.code === 'Space' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setOutputText(prev => prev + " ");
+        console.log(`[SPACE] Added space via keyboard`);
+      }
+      // 'x' key → delete last character
+      else if (e.key.toLowerCase() === 'x' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setOutputText(prev => {
+          if (prev.length > 0) {
+            const newText = prev.slice(0, -1);
+            console.log(`[DELETE] Removed last char via keyboard. Remaining: "${newText}"`);
+            return newText;
+          }
+          return prev;
+        });
+      }
+      // 'c' key → clear all text
+      else if (e.key.toLowerCase() === 'c' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setOutputText(prev => {
+          if (prev.length > 0) {
+            console.log("[CLEAR] All text cleared via keyboard");
+            setFixedText("");
+            setFixError(null);
+            return "";
+          }
+          return prev;
+        });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, []);
+
   return (
     <div className={styles.container}>
       {/* --- HUD HEADER --- */}
@@ -422,6 +467,51 @@ export default function GestureRecognitionPage() {
                 Total: {totalGestures}<br/>
                 Status: {isCapturing ? '🟢 OK' : '⚪ Ready'}
             </div>
+
+            {/* === HƯỚNG DẪN SỬ DỤNG === */}
+            <div style={{marginTop: '15px', borderTop: '1px dashed #004d00', paddingTop: '10px'}}>
+              <div style={{ color: '#00ff00', fontWeight: 'bold', fontSize: '11px', marginBottom: '8px' }}>
+                📖 HƯỚNG DẪN:
+              </div>
+              <div style={{
+                  background: '#0a2a0a',
+                  border: '1px solid #00aa00',
+                  padding: '10px',
+                  borderRadius: '3px',
+                  fontSize: '10px',
+                  lineHeight: '1.6',
+                  color: '#aaffaa'
+              }}>
+                <div style={{ marginBottom: '6px' }}>
+                  <strong style={{ color: '#00ff00' }}>⌨️ PHÍM TẮT:</strong>
+                </div>
+                <div style={{ marginLeft: '8px', marginBottom: '4px' }}>
+                  <span style={{ color: '#ffaa00' }}>Space</span> - Thêm khoảng trắng
+                </div>
+                <div style={{ marginLeft: '8px', marginBottom: '4px' }}>
+                  <span style={{ color: '#ffaa00' }}>X</span> - Xóa ký tự cuối
+                </div>
+                <div style={{ marginLeft: '8px', marginBottom: '8px' }}>
+                  <span style={{ color: '#ffaa00' }}>C</span> - Xóa toàn bộ văn bản
+                </div>
+                
+                <div style={{ marginTop: '8px', marginBottom: '6px', borderTop: '1px dashed #004d00', paddingTop: '6px' }}>
+                  <strong style={{ color: '#00ff00' }}>🎯 CÁCH SỬ DỤNG:</strong>
+                </div>
+                <div style={{ marginLeft: '8px', marginBottom: '4px' }}>
+                  • Giữ gesture 2 lần liên tiếp để thêm ký tự
+                </div>
+                <div style={{ marginLeft: '8px', marginBottom: '4px' }}>
+                  • Văn bản tự động fix dấu sau khi thêm ký tự
+                </div>
+                <div style={{ marginLeft: '8px', marginBottom: '4px' }}>
+                  • Xem RAW (không dấu) và FIXED (có dấu) ở panel bên
+                </div>
+                <div style={{ marginLeft: '8px', marginBottom: '0px' }}>
+                  • Nhấn <span style={{ color: '#ffaa00' }}>RESET</span> để reset trạng thái
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -439,99 +529,6 @@ export default function GestureRecognitionPage() {
               setFrameBatch([]);
           }}>
             <i className="fas fa-sync"></i> RESET
-          </button>
-          
-          {/* ADD SPACE */}
-          <button 
-            className={styles["tactical-btn"]} 
-            style={{ background: '#0066ff' }}
-            onClick={() => {
-              setOutputText(prev => prev + " ");
-              console.log(`[SPACE] Added space`);
-            }}
-          >
-            <i className="fas fa-long-arrow-alt-right"></i> SPACE
-          </button>
-
-          {/* FIX DIACRITICS (Manual trigger - vẫn giữ để user có thể fix lại nếu cần) */}
-          <button 
-            className={styles["tactical-btn"]} 
-            style={{ background: outputText.length > 0 ? '#00aa00' : '#333333', opacity: outputText.length > 0 ? 1 : 0.5 }}
-            disabled={outputText.length === 0 || isFixingText}
-            onClick={() => {
-              // #region agent log
-              fetch('http://127.0.0.1:7242/ingest/fac30a44-515e-493f-a148-2c304048b02d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'recognize/page.tsx:FIX_TEXT_button',message:'Manual fix diacritics triggered',data:{text:outputText},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-              // #endregion agent log
-              
-              // Call backend to fix diacritics for the entire text
-              console.log(`[FIX-DIACRITICS] Manual fix: "${outputText}"`);
-              setIsFixingText(true);
-              setFixError(null);
-              recognitionApi.fixDiacritics(outputText).then(result => {
-                // Kiểm tra nếu result giống với original (có thể API fail)
-                if (result === outputText) {
-                  setFixedText(outputText);
-                  setFixError("Không thể fix dấu. Vui lòng kiểm tra AI service.");
-                } else {
-                  // Format lại: capitalize từng từ để giữ format đẹp
-                  const formattedResult = result && result.length > 0 
-                    ? result.split(' ').map(word => 
-                        word.length > 0 ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : word
-                      ).join(' ')
-                    : result;
-                  setFixedText(formattedResult);
-                  setFixError(null);
-                  console.log(`[FIX-DIACRITICS] Result: "${result}" → "${formattedResult}"`);
-                }
-              }).catch(err => {
-                const status = err.response?.status;
-                let errorMsg = "Không thể kết nối đến dịch vụ AI";
-                
-                if (status === 502) {
-                  errorMsg = "Lỗi 502: Python AI service không khả dụng. Vui lòng kiểm tra service đang chạy trên port 5000.";
-                } else if (status === 503) {
-                  errorMsg = "Dịch vụ AI tạm thời không khả dụng";
-                } else if (status === 400) {
-                  errorMsg = "Dữ liệu không hợp lệ";
-                }
-                
-                console.error("[FIX-DIACRITICS] Error:", err);
-                setFixError(errorMsg);
-                setFixedText(outputText); // Hiển thị text gốc nếu lỗi
-              }).finally(() => {
-                setIsFixingText(false);
-              });
-            }}
-          >
-            <i className="fas fa-check"></i> {isFixingText ? "FIXING..." : "FIX TEXT"}
-          </button>
-          
-          {/* DELETE BUTTON */}
-          <button 
-            className={styles["tactical-btn"]} 
-            style={{ background: outputText.length > 0 ? '#ff3333' : '#333333', opacity: outputText.length > 0 ? 1 : 0.5 }}
-            disabled={outputText.length === 0}
-            onClick={() => {
-              setOutputText(prev => prev.slice(0, -1));
-              console.log(`[DELETE] Removed last char. Remaining: "${outputText.slice(0, -1)}"`);
-            }}
-          >
-            <i className="fas fa-backspace"></i> DELETE
-          </button>
-
-          {/* CLEAR ALL TEXT */}
-          <button 
-            className={styles["tactical-btn"]} 
-            style={{ background: outputText.length > 0 ? '#ff6600' : '#333333', opacity: outputText.length > 0 ? 1 : 0.5 }}
-            disabled={outputText.length === 0}
-            onClick={() => {
-              setOutputText("");
-              setFixedText("");
-              setFixError(null);
-              console.log("[CLEAR] All text cleared");
-            }}
-          >
-            <i className="fas fa-trash"></i> CLEAR ALL
           </button>
         </div>
       </div>
