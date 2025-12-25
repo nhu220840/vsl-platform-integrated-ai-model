@@ -68,44 +68,6 @@ export default function LandingPage() {
           max-width: 600px;
         }
 
-        /* Top-right user icon */
-        .user-icon {
-          position: fixed;
-          top: 2rem;
-          right: 2rem;
-          z-index: 10;
-          font-size: 1.5rem;
-          color: #00ff41;
-          cursor: pointer;
-          transition: all 0.3s ease;
-        }
-
-        .user-icon:hover {
-          transform: scale(1.2);
-          text-shadow: 0 0 10px #00ff41, 0 0 20px #00ff41;
-        }
-
-        .tooltip {
-          position: absolute;
-          bottom: -35px;
-          left: 50%;
-          transform: translateX(-50%);
-          background: rgba(0, 255, 65, 0.2);
-          color: #00ff41;
-          padding: 0.5rem 1rem;
-          border: 1px solid #00ff41;
-          border-radius: 4px;
-          font-size: 0.85rem;
-          white-space: nowrap;
-          opacity: 0;
-          pointer-events: none;
-          transition: opacity 0.3s ease;
-        }
-
-        .user-icon:hover .tooltip {
-          opacity: 1;
-        }
-
         /* Main button styling */
         .start-button {
           font-size: 4rem;
@@ -237,22 +199,11 @@ export default function LandingPage() {
             padding: 1.5rem;
           }
 
-          .user-icon {
-            top: 1rem;
-            right: 1rem;
-            font-size: 1.25rem;
-          }
-
           .container {
             width: 95%;
           }
         }
       `}</style>
-
-      <div className="user-icon" onClick={() => router.push("/login")}>
-        👤
-        <div className="tooltip">Đăng nhập</div>
-      </div>
 
       <div className="container">
         <div className="glitch" data-text="BẮT ĐẦU">

@@ -23,7 +23,6 @@ interface User {
   phoneNumber?: string;
   bio?: string;
   role: "ADMIN" | "USER";
-  status: "ACTIVE" | "INACTIVE" | "BANNED";
   lastLogin: string;
   joinDate: string;
   avatar?: string;
@@ -41,7 +40,6 @@ const mapUserDTOToUser = (dto: UserDTO): User => {
     phoneNumber: dto.phoneNumber || undefined,
     bio: dto.bio || undefined,
     role: (dto.role as "ADMIN" | "USER") || "USER",
-    status: "ACTIVE", // Backend không có status field, mặc định ACTIVE
     lastLogin: "Never", // Backend không có lastLogin, có thể thêm sau
     joinDate: dto.createdAt ? new Date(dto.createdAt).toLocaleDateString('en-GB') : "",
     avatar: dto.avatarUrl || undefined
@@ -146,7 +144,6 @@ export default function AdminUsersPage() {
   const handleAddUser = () => {
     setCurrentUser({ 
         role: "USER", 
-        status: "ACTIVE",
         avatar: "", 
         fullName: "",
         username: "",
@@ -343,7 +340,7 @@ export default function AdminUsersPage() {
         {/* Stats */}
         <div className={styles["stats-container"]}>
           <div className={styles["stat-card"]}><div className={styles["stat-icon"]}><Users /></div><div className={styles["stat-info"]}><span className={styles["stat-value"]}>{loading ? "..." : totalElements}</span><span className={styles["stat-label"]}>TOTAL USERS</span></div></div>
-          <div className={styles["stat-card"]}><div className={styles["stat-icon"]}><UserCheck /></div><div className={styles["stat-info"]}><span className={styles["stat-value"]}>{loading ? "..." : users.filter(u=>u.status==='ACTIVE').length}</span><span className={styles["stat-label"]}>ACTIVE NOW</span></div></div>
+          <div className={styles["stat-card"]}><div className={styles["stat-icon"]}><UserCheck /></div><div className={styles["stat-info"]}><span className={styles["stat-value"]}>{loading ? "..." : users.filter(u=>u.role==='USER').length}</span><span className={styles["stat-label"]}>REGULAR USERS</span></div></div>
           <div className={styles["stat-card"]}><div className={styles["stat-icon"]}><Shield /></div><div className={styles["stat-info"]}><span className={styles["stat-value"]}>{loading ? "..." : users.filter(u=>u.role==='ADMIN').length}</span><span className={styles["stat-label"]}>ADMINS</span></div></div>
           <div className={styles["stat-card"]}><div className={styles["stat-icon"]}><Activity /></div><div className={styles["stat-info"]}><span className={styles["stat-value"]}>98%</span><span className={styles["stat-label"]}>RETENTION</span></div></div>
         </div>
@@ -456,9 +453,6 @@ export default function AdminUsersPage() {
                   <div className={styles["profile-username"]}>{viewUser.username}</div>
                   <div className={`${styles["dossier-role-stamp"]} ${viewUser.role==='ADMIN'?styles["stamp-admin"]:styles["stamp-user"]}`}>
                       {viewUser.role}
-                  </div>
-                  <div style={{marginTop:'20px', fontSize:'10px', color:'#666', textAlign:'center'}}>
-                      STATUS: <span style={{color: viewUser.status==='ACTIVE'?'#00ff41':'#666'}}>{viewUser.status}</span>
                   </div>
               </div>
 
@@ -598,23 +592,8 @@ export default function AdminUsersPage() {
                 ></textarea>
               </div>
 
-              {/* Row 6: Status & Password */}
-              <div className="grid grid-cols-2 gap-4">
-                  <div className={styles["form-group"]}>
-                      <label className={styles["form-label"]}>STATUS</label>
-                      <select 
-                        className={styles["form-select"]} 
-                        value={currentUser.status || 'ACTIVE'} 
-                        onChange={(e) => handleInputChange('status', e.target.value as any)}
-                      >
-                        <option value="ACTIVE">ACTIVE</option>
-                        <option value="INACTIVE">INACTIVE</option>
-                        <option value="BANNED">BANNED</option>
-                      </select>
-                  </div>
-                  
-                  {/* Password Change Field */}
-                  <div className={styles["form-group"]}>
+              {/* Row 6: Password */}
+              <div className={styles["form-group"]}>
                     <label className={styles["form-label"]} style={{color: '#fff', display:'flex', alignItems:'center', gap:'5px'}}>
                       <Key size={12} /> 
                       {isEditMode ? "NEW PASSWORD (OPTIONAL)" : "INITIAL PASSWORD"}
@@ -626,7 +605,6 @@ export default function AdminUsersPage() {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                     />
-                  </div>
               </div>
 
             </div>
