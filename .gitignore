@@ -11,3 +11,7 @@ vsl-platform-backend/postgres-data/
 
 # Cách 4: Restart container backend
 #docker-compose restart backend
+
+# Markdown documentation files
+*.md
+!README.md
