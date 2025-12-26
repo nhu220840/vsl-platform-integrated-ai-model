@@ -280,9 +280,9 @@ export default function DashboardPage() {
                             {fav.word}
                           </h3>
                           <p className={styles["favorite-definition"]}>
-                            {fav.definition.length > 100
+                            {fav.definition && fav.definition.length > 100
                               ? fav.definition.substring(0, 100) + "..."
-                              : fav.definition}
+                              : fav.definition || "Chưa có định nghĩa"}
                           </p>
                           <p className={styles["favorite-date"]}>
                             💾 {formatDate(fav.savedAt)}

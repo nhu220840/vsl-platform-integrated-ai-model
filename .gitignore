@@ -8,3 +8,6 @@ vsl-platform-backend/postgres-data/
 
 # # Cách 3: Follow logs realtime
 # docker-compose logs -f backend
+
+# Cách 4: Restart container backend
+#docker-compose restart backend

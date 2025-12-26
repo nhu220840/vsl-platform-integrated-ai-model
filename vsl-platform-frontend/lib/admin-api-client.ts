@@ -274,14 +274,27 @@ export const adminApi = {
   // ==================== Dictionary Management ====================
 
   /**
-   * GET /api/dictionary/search?query=...
-   * Tìm kiếm dictionary entries (có thể dùng để list tất cả nếu query rỗng hoặc "*")
-   * Note: Backend yêu cầu query không rỗng, nên để list tất cả có thể dùng query="*" hoặc query rất ngắn
+   * GET /api/dictionary/list
+   * Lấy tất cả dictionary entries (ADMIN only)
    */
-  searchDictionary: async (query: string = "*"): Promise<DictionaryDTO[]> => {
+  getAllDictionary: async (): Promise<DictionaryDTO[]> => {
+    try {
+      const response = await apiClient.get<ApiResponse<DictionaryDTO[]>>('/dictionary/list');
+      return response.data.data ?? [];
+    } catch (error: any) {
+      console.error('[Admin API] Error getting all dictionary:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * GET /api/dictionary/search?query=...
+   * Tìm kiếm dictionary entries
+   */
+  searchDictionary: async (query: string): Promise<DictionaryDTO[]> => {
     try {
       const response = await apiClient.get<ApiResponse<DictionaryDTO[]>>('/dictionary/search', {
-        params: { query: query.trim() || "*" }
+        params: { query: query.trim() }
       });
       return response.data.data ?? [];
     } catch (error: any) {
@@ -310,8 +323,9 @@ export const adminApi = {
   /**
    * POST /api/dictionary
    * Tạo dictionary entry mới (ADMIN only)
+   * videoUrl là optional - có thể để trống nếu không có video
    */
-  createDictionary: async (dictionaryData: { word: string; definition?: string; videoUrl: string }): Promise<DictionaryDTO> => {
+  createDictionary: async (dictionaryData: { word: string; definition?: string; videoUrl?: string }): Promise<DictionaryDTO> => {
     try {
       const response = await apiClient.post<ApiResponse<DictionaryDTO>>('/dictionary', dictionaryData);
       if (!response.data.data) {

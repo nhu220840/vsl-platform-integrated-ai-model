@@ -87,8 +87,7 @@ export default function AdminDictionaryPage() {
       try {
         setLoading(true);
         setError(null);
-        // Dùng search với query rộng để lấy tất cả (hoặc có thể thêm API list riêng sau)
-        const data = await adminApi.searchDictionary("*");
+        const data = await adminApi.getAllDictionary();
         const mapped = data.map(mapDictionaryDTOToItem);
         setWords(mapped);
       } catch (err: any) {
@@ -145,7 +144,7 @@ export default function AdminDictionaryPage() {
     try {
       await adminApi.deleteDictionary(id);
       // Reload dictionary sau khi xóa
-      const data = await adminApi.searchDictionary("*");
+      const data = await adminApi.getAllDictionary();
       const mapped = data.map(mapDictionaryDTOToItem);
       setWords(mapped);
       alert("Entry deleted successfully!");
@@ -156,8 +155,8 @@ export default function AdminDictionaryPage() {
   };
 
   const handleSave = async () => {
-    if (!currentWord.word || !currentWord.videoUrl) {
-      alert("Word and Video URL are required!");
+    if (!currentWord.word || !currentWord.word.trim()) {
+      alert("Word is required!");
       return;
     }
 
@@ -167,7 +166,7 @@ export default function AdminDictionaryPage() {
         const updateData: Partial<DictionaryDTO> = {
           word: currentWord.word,
           definition: currentWord.definition || undefined,
-          videoUrl: currentWord.videoUrl
+          videoUrl: currentWord.videoUrl || undefined
         };
         await adminApi.updateDictionary(currentWord.id, updateData);
         alert("Entry updated successfully!");
@@ -176,14 +175,14 @@ export default function AdminDictionaryPage() {
         const createData = {
           word: currentWord.word!,
           definition: currentWord.definition || undefined,
-          videoUrl: currentWord.videoUrl!
+          videoUrl: currentWord.videoUrl || undefined
         };
         await adminApi.createDictionary(createData);
         alert("Entry created successfully!");
       }
       
       // Reload dictionary
-      const data = await adminApi.searchDictionary("*");
+      const data = await adminApi.getAllDictionary();
       const mapped = data.map(mapDictionaryDTOToItem);
       setWords(mapped);
       setIsModalOpen(false);
@@ -377,32 +376,44 @@ export default function AdminDictionaryPage() {
                 <input 
                   type="text" 
                   className={styles["form-input"]} 
-                  defaultValue={currentWord.word}
+                  value={currentWord.word || ""}
+                  onChange={(e) => setCurrentWord({...currentWord, word: e.target.value})}
                 />
               </div>
               <div className={styles["form-group"]}>
                 <label className={styles["form-label"]}>CATEGORY</label>
-                <select className={styles["form-select"]} defaultValue={currentWord.category}>
-                  <option>Greeting</option>
-                  <option>Family</option>
-                  <option>Work</option>
-                  <option>Travel</option>
+                <select 
+                  className={styles["form-select"]} 
+                  value={currentWord.category || ""}
+                  onChange={(e) => setCurrentWord({...currentWord, category: e.target.value})}
+                >
+                  <option value="">Select Category</option>
+                  <option value="Greeting">Greeting</option>
+                  <option value="Family">Family</option>
+                  <option value="Work">Work</option>
+                  <option value="Travel">Travel</option>
                 </select>
               </div>
               <div className={styles["form-group"]}>
                 <label className={styles["form-label"]}>DIFFICULTY</label>
-                <select className={styles["form-select"]} defaultValue={currentWord.difficulty}>
-                  <option>Easy</option>
-                  <option>Medium</option>
-                  <option>Hard</option>
+                <select 
+                  className={styles["form-select"]} 
+                  value={currentWord.difficulty || ""}
+                  onChange={(e) => setCurrentWord({...currentWord, difficulty: e.target.value})}
+                >
+                  <option value="">Select Difficulty</option>
+                  <option value="Easy">Easy</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Hard">Hard</option>
                 </select>
               </div>
               <div className={styles["form-group"]}>
-                <label className={styles["form-label"]}>VIDEO URL (YOUTUBE)</label>
+                <label className={styles["form-label"]}>VIDEO URL (OPTIONAL)</label>
                 <input 
                   type="text" 
                   className={styles["form-input"]} 
-                  defaultValue={currentWord.videoUrl}
+                  value={currentWord.videoUrl || ""}
+                  onChange={(e) => setCurrentWord({...currentWord, videoUrl: e.target.value})}
                   placeholder="https://..."
                 />
               </div>
@@ -410,7 +421,8 @@ export default function AdminDictionaryPage() {
                 <label className={styles["form-label"]}>DEFINITION</label>
                 <textarea 
                   className={styles["form-textarea"]}
-                  defaultValue={currentWord.definition}
+                  value={currentWord.definition || ""}
+                  onChange={(e) => setCurrentWord({...currentWord, definition: e.target.value})}
                 ></textarea>
               </div>
             </div>

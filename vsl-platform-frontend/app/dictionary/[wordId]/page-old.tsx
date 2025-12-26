@@ -250,57 +250,22 @@ export default function WordDetailPage() {
             <div className={styles["video-title"]}>VIDEO HƯỚNG DẪN</div>
             <div className={styles["video-container"]}>
               {word.videoUrl ? (
-                (() => {
-                  const videoInfo = getVideoInfo(word.videoUrl);
-                  
-                  if (videoInfo.type === 'youtube') {
-                    return (
-                      <iframe
-                        width="100%"
-                        height="100%"
-                        src={videoInfo.embedUrl}
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                        style={{ minHeight: "400px" }}
-                      />
-                    );
-                  }
-                  
-                  if (videoInfo.type === 'vimeo') {
-                    return (
-                      <iframe
-                        src={videoInfo.embedUrl}
-                        width="100%"
-                        height="100%"
-                        frameBorder="0"
-                        allow="autoplay; fullscreen; picture-in-picture"
-                        allowFullScreen
-                        style={{ minHeight: "400px" }}
-                      />
-                    );
-                  }
-                  
-                  return (
-                    <video
-                      src={word.videoUrl}
-                      controls
-                      loop
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "contain",
-                        backgroundColor: "#000",
-                        minHeight: "400px"
-                      }}
-                    >
-                      Trình duyệt không hỗ trợ video
-                    </video>
-                  );
-                })()
+                <video
+                  src={word.videoUrl}
+                  controls
+                  loop
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "contain",
+                    backgroundColor: "#000",
+                  }}
+                >
+                  Trình duyệt không hỗ trợ video
+                </video>
               ) : (
                 <div className={styles["video-placeholder"]}>
-                  🎬 Chưa có video hướng dẫn
+                  � Chưa có video hướng dẫn
                   <div style={{ fontSize: "12px", marginTop: "10px", opacity: 0.7 }}>
                     Bạn có thể giúp chúng tôi bằng cách báo cáo và gợi ý video
                   </div>
