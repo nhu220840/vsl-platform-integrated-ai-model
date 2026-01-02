@@ -53,6 +53,34 @@ public class DictionaryController {
     }
 
     /**
+     * GET /api/dictionary/latest
+     * Get the latest N dictionary entries (most recently created)
+     * Used for showing recent suggestions in search without user input
+     * Default: 10 entries
+     *
+     * @param limit Number of entries to retrieve (default 10)
+     * @return List of latest dictionary entries
+     */
+    @GetMapping("/latest")
+    public ResponseEntity<ApiResponse<List<DictionaryDTO>>> getLatest(
+            @RequestParam(defaultValue = "10") int limit) {
+        try {
+            if (limit <= 0 || limit > 100) {
+                limit = 10;
+            }
+            var results = dictionaryService.getLatestWords(limit);
+            return ResponseEntity.ok(ApiResponse.success(
+                    String.format("Found %d latest word(s)", results.size()),
+                    results
+            ));
+        } catch (Exception e) {
+            log.error("Failed to get latest dictionary words: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to get latest dictionary words: " + e.getMessage()));
+        }
+    }
+
+    /**
      * GET /api/dictionary/list
      * Get all dictionary entries (for admin listing)
      * No pagination, returns all entries

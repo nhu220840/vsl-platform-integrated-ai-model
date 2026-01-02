@@ -30,5 +30,15 @@ public interface DictionaryRepository extends JpaRepository<Dictionary, Long> {
      */
     @Query(value = "SELECT * FROM dictionary ORDER BY RANDOM() LIMIT 1", nativeQuery = true)
     Optional<Dictionary> findRandom();
+
+    /**
+     * Get the latest N dictionary entries (most recently created)
+     * Used for showing recent suggestions in search
+     * 
+     * @param limit Maximum number of entries to retrieve
+     * @return List of latest dictionary entries ordered by creation date
+     */
+    @Query(value = "SELECT * FROM dictionary ORDER BY id DESC LIMIT :limit", nativeQuery = true)
+    List<Dictionary> findLatestWords(@Param("limit") int limit);
 }
 

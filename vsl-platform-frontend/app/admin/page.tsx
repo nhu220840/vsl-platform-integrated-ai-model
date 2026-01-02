@@ -13,7 +13,8 @@ import {
   Lock, 
   AlertCircle,
   Activity,
-  User
+  User,
+  Flag
 } from "lucide-react";
 import styles from "../../styles/admin.module.css";
 import { adminApi } from "@/lib/admin-api-client";
@@ -86,6 +87,7 @@ export default function AdminDashboard() {
     { label: "[USER MANAGEMENT]", href: "/admin/users", icon: Users },
     { label: "[CONTRIBUTIONS]", href: "/admin/contributions", icon: FileText },
     { label: "[DICTIONARY DATABASE]", href: "/admin/dictionary", icon: BookOpen },
+    { label: "[ERROR REPORTS]", href: "/admin/reports", icon: Flag },
   ];
 
   // #region agent log

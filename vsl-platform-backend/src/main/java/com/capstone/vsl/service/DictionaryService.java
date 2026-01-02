@@ -90,6 +90,24 @@ public class DictionaryService {
     }
 
     /**
+     * Get the latest N dictionary words (most recently created)
+     * Used for showing recent suggestions in search without user input
+     *
+     * @param limit Number of entries to retrieve
+     * @return List of latest dictionary entries
+     */
+    @Transactional(readOnly = true)
+    public List<DictionaryDTO> getLatestWords(int limit) {
+        log.debug("Getting latest {} dictionary words", limit);
+        var results = dictionaryRepository.findLatestWords(limit);
+        log.debug("Found {} latest words", results.size());
+        
+        return results.stream()
+                .map(this::entityToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Create a new dictionary word
      * Dual-Write Pattern:
      * 1. Save to PostgreSQL (transactional, source of truth)

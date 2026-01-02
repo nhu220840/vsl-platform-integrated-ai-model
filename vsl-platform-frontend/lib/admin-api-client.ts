@@ -43,6 +43,16 @@ export interface ContributionDTO {
   updatedAt: string; // ISO date-time string
 }
 
+export interface ReportDTO {
+  id: number;
+  dictionaryId: number;
+  word: string;
+  reason: string;
+  status: "OPEN" | "RESOLVED";
+  createdAt: string; // ISO date-time string
+  updatedAt: string; // ISO date-time string
+}
+
 export interface DashboardStatsDTO {
   totalUsers: number;
   totalWords: number;
@@ -364,6 +374,64 @@ export const adminApi = {
       await apiClient.delete<ApiResponse<string>>(`/admin/dictionary/${id}`);
     } catch (error: any) {
       console.error('[Admin API] Error deleting dictionary entry:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // ==================== Report Management ====================
+
+  /**
+   * GET /api/admin/reports
+   * Lấy tất cả reports
+   */
+  getReports: async (status: "ALL" | "OPEN" | "RESOLVED"): Promise<ReportDTO[]> => {
+    try {
+      const endpoint = status === "OPEN" ? "/admin/reports/open" : 
+                      status === "RESOLVED" ? "/admin/reports" : "/admin/reports";
+      const response = await apiClient.get<ApiResponse<ReportDTO[]>>(endpoint);
+      return response.data.data ?? [];
+    } catch (error: any) {
+      console.error('[Admin API] Error getting reports:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * GET /api/admin/reports/open
+   * Lấy tất cả open reports
+   */
+  getOpenReports: async (): Promise<ReportDTO[]> => {
+    try {
+      const response = await apiClient.get<ApiResponse<ReportDTO[]>>("/admin/reports/open");
+      return response.data.data ?? [];
+    } catch (error: any) {
+      console.error('[Admin API] Error getting open reports:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * POST /api/admin/reports/{id}/resolve
+   * Mark report as resolved
+   */
+  resolveReport: async (id: number): Promise<void> => {
+    try {
+      await apiClient.post<ApiResponse<string>>(`/admin/reports/${id}/resolve`);
+    } catch (error: any) {
+      console.error('[Admin API] Error resolving report:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * DELETE /api/admin/reports/{id}
+   * Delete report
+   */
+  deleteReport: async (id: number): Promise<void> => {
+    try {
+      await apiClient.delete<ApiResponse<string>>(`/admin/reports/${id}`);
+    } catch (error: any) {
+      console.error('[Admin API] Error deleting report:', error.response?.data || error.message);
       throw error;
     }
   },

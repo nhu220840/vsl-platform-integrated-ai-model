@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { 
   Terminal, LayoutDashboard, Users, FileText, BookOpen, LogOut, Lock, 
   Plus, Edit, Trash2, Search, X, Save, Shield, UserCheck, Activity, 
-  Eye, Key, User as UserIcon, MapPin, Calendar, Phone, Mail, FileCode 
+  Eye, Key, User as UserIcon, MapPin, Calendar, Phone, Mail, FileCode, Flag 
 } from "lucide-react";
 import styles from "../../../styles/admin-users.module.css";
 import { adminApi, UserDTO } from "@/lib/admin-api-client";
@@ -114,6 +114,7 @@ export default function AdminUsersPage() {
     { label: "[USER MANAGEMENT]", href: "/admin/users", icon: Users },
     { label: "[CONTRIBUTIONS]", href: "/admin/contributions", icon: FileText },
     { label: "[DICTIONARY DATABASE]", href: "/admin/dictionary", icon: BookOpen },
+    { label: "[ERROR REPORTS]", href: "/admin/reports", icon: Flag },
   ];
 
   // #region agent log

@@ -10,9 +10,40 @@ import styles from "../../styles/dictionary.module.css";
 export default function DictionaryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<DictionaryDTO[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  /**
+   * Load latest dictionary entries on mount
+   * Shows 10 most recent entries as suggestions
+   */
+  useEffect(() => {
+    const loadLatestWords = async () => {
+      try {
+        console.log("[Dictionary] Loading latest 10 words...");
+        const response = await apiClient.get<ApiResponse<DictionaryDTO[]>>(
+          "/dictionary/latest",
+          { params: { limit: 10 } }
+        );
+
+        console.log(`[Dictionary] Latest words response:`, response.data);
+
+        if (response.data.code === 200 && response.data.data) {
+          const latestWords = response.data.data;
+          console.log(`[Dictionary] Loaded ${latestWords.length} latest words`);
+          setResults(latestWords);
+        }
+      } catch (err: any) {
+        console.error("[Dictionary] Failed to load latest words:", err);
+        // Don't show error for initial load, just show empty state
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadLatestWords();
+  }, []);
 
   /**
    * searchDictionary - Gọi API tìm kiếm từ điển
@@ -34,9 +65,22 @@ export default function DictionaryPage() {
     const trimmedQuery = query.trim();
 
     if (!trimmedQuery) {
-      console.log("[Dictionary] Query is empty, clearing results");
-      setResults([]);
+      console.log("[Dictionary] Query is empty, reloading latest words");
       setError("");
+      setIsLoading(true);
+      try {
+        const response = await apiClient.get<ApiResponse<DictionaryDTO[]>>(
+          "/dictionary/latest",
+          { params: { limit: 10 } }
+        );
+        if (response.data.code === 200 && response.data.data) {
+          setResults(response.data.data);
+        }
+      } catch (err) {
+        console.error("[Dictionary] Error loading latest words:", err);
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
 
@@ -132,11 +176,11 @@ export default function DictionaryPage() {
       <div className={styles["content-section"]}>
         <div className={styles["section-header"]}>
           <h2 className={styles["section-title"]}>
-            {searchQuery ? "SEARCH RESULTS" : "ALL WORDS"}
+            {searchQuery ? "SEARCH RESULTS" : "LATEST WORDS"}
           </h2>
           <div className={styles["result-count"]}>
             {isLoading
-              ? "Searching..."
+              ? "Loading..."
               : `Found ${results.length} results`}
           </div>
         </div>
